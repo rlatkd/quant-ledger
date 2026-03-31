@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ParsedReceipt, ReceiptItem } from "../_lib/types";
 
-type Step = "select" | "parsing" | "confirm";
+type Step = "select" | "pre-confirm" | "parsing" | "confirm";
 
 interface Props {
   open: boolean;
@@ -16,14 +16,19 @@ export default function UploadSheet({ open, onClose }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>("select");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [rawText, setRawText] = useState("");
   const [parsed, setParsed] = useState<ParsedReceipt | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
 
   function handleClose() {
     setStep("select");
+    setImageFile(null);
     setPreview(null);
+    setRawText("");
     setParsed(null);
     setError(null);
     setSaving(false);
@@ -33,26 +38,31 @@ export default function UploadSheet({ open, onClose }: Props) {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    // input 초기화 (같은 파일 재선택 가능하도록)
     e.target.value = "";
-
+    setImageFile(file);
     setPreview(URL.createObjectURL(file));
     setError(null);
+    setStep("pre-confirm");
+  }
+
+  async function handleStartParse() {
+    if (!imageFile) return;
     setStep("parsing");
+    setError(null);
 
     try {
       const formData = new FormData();
-      formData.append("image", file);
-
+      formData.append("image", imageFile);
       const res = await fetch("/api/parse", { method: "POST", body: formData });
       if (!res.ok) throw new Error();
 
-      const data: ParsedReceipt = await res.json();
+      const data: ParsedReceipt & { raw_text?: string } = await res.json();
+      setRawText(data.raw_text ?? "");
       setParsed(data);
       setStep("confirm");
     } catch {
-      setError("영수증 인식에 실패했습니다. 다시 시도해주세요.");
-      setStep("select");
+      setError("분석에 실패했습니다. 다시 시도해주세요.");
+      setStep("pre-confirm");
     }
   }
 
@@ -80,12 +90,11 @@ export default function UploadSheet({ open, onClose }: Props) {
     if (!parsed) return;
     setSaving(true);
     setError(null);
-
     try {
       const res = await fetch("/api/receipts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...parsed, image_url: preview ?? "" }),
+        body: JSON.stringify({ ...parsed, raw_text: rawText, image_url: preview ?? "" }),
       });
       if (!res.ok) throw new Error();
       handleClose();
@@ -97,12 +106,29 @@ export default function UploadSheet({ open, onClose }: Props) {
     }
   }
 
-  // 시트 높이: select/parsing은 하단 시트, confirm은 풀스크린
   const isFullScreen = step === "confirm";
 
   return (
     <>
-      {/* 딤 배경 */}
+      {/* 이미지 전체보기 */}
+      {imageViewerOpen && preview && (
+        <div
+          className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
+          onClick={() => setImageViewerOpen(false)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={preview} alt="영수증 원본" className="max-w-full max-h-full object-contain" />
+          <button
+            className="absolute top-12 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/20 text-white"
+            onClick={() => setImageViewerOpen(false)}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {open && (
         <div
           className="fixed inset-0 bg-black/40 z-40 transition-opacity"
@@ -110,39 +136,27 @@ export default function UploadSheet({ open, onClose }: Props) {
         />
       )}
 
-      {/* 시트 */}
       <div
         className={`fixed left-0 right-0 z-50 bg-white transition-transform duration-300 ease-out
-          ${isFullScreen ? "inset-0 rounded-none overflow-y-auto" : "bottom-0 rounded-t-3xl shadow-2xl"}
+          ${isFullScreen ? "inset-0 rounded-none" : "bottom-0 rounded-t-3xl shadow-2xl h-[420px] flex flex-col overflow-hidden"}
           ${open ? "translate-y-0" : "translate-y-full"}
         `}
       >
         {/* ── SELECT ── */}
         {step === "select" && (
-          <div className="max-w-md mx-auto">
-            {/* 핸들 */}
-            <div className="flex justify-center pt-3 pb-2">
+          <div className="max-w-md mx-auto w-full flex flex-col h-full">
+            <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
               <div className="w-10 h-1 rounded-full bg-gray-200" />
             </div>
-
-            <div className="px-5 pt-2 pb-4">
+            <div className="flex-1 flex flex-col justify-center px-5 pb-6">
               <h2 className="text-lg font-bold text-gray-900 mb-1">영수증 추가</h2>
               <p className="text-sm text-gray-400 mb-5">카메라로 촬영하거나 앨범에서 선택하세요</p>
-
               {error && (
-                <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-                  {error}
-                </div>
+                <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
               )}
-
               <div className="flex flex-col gap-3">
                 <button
-                  onClick={() => {
-                    if (fileInputRef.current) {
-                      fileInputRef.current.setAttribute("capture", "environment");
-                      fileInputRef.current.click();
-                    }
-                  }}
+                  onClick={() => { fileInputRef.current?.setAttribute("capture", "environment"); fileInputRef.current?.click(); }}
                   className="flex items-center gap-4 bg-gray-50 rounded-2xl px-5 py-4 active:bg-gray-100 transition-colors text-left"
                 >
                   <div className="w-11 h-11 rounded-full bg-skku-light flex items-center justify-center flex-shrink-0">
@@ -156,14 +170,8 @@ export default function UploadSheet({ open, onClose }: Props) {
                     <p className="text-xs text-gray-400 mt-0.5">지금 바로 영수증을 찍어요</p>
                   </div>
                 </button>
-
                 <button
-                  onClick={() => {
-                    if (fileInputRef.current) {
-                      fileInputRef.current.removeAttribute("capture");
-                      fileInputRef.current.click();
-                    }
-                  }}
+                  onClick={() => { fileInputRef.current?.removeAttribute("capture"); fileInputRef.current?.click(); }}
                   className="flex items-center gap-4 bg-gray-50 rounded-2xl px-5 py-4 active:bg-gray-100 transition-colors text-left"
                 >
                   <div className="w-11 h-11 rounded-full bg-skku-light flex items-center justify-center flex-shrink-0">
@@ -177,37 +185,67 @@ export default function UploadSheet({ open, onClose }: Props) {
                   </div>
                 </button>
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* 하단 safe area */}
-              <div className="h-8" />
+        {/* ── PRE-CONFIRM ── */}
+        {step === "pre-confirm" && (
+          <div className="max-w-md mx-auto w-full flex flex-col h-full">
+            <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+              <div className="w-10 h-1 rounded-full bg-gray-200" />
+            </div>
+            {preview && (
+              <button
+                className="flex-1 mx-5 mb-3 rounded-2xl overflow-hidden bg-gray-50 min-h-0"
+                onClick={() => setImageViewerOpen(true)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={preview} alt="영수증" className="w-full h-full object-cover" />
+              </button>
+            )}
+            <div className="flex-shrink-0 px-5 pb-6">
+              <h2 className="text-base font-bold text-gray-900 mb-0.5">이미지 분석</h2>
+              <p className="text-sm text-gray-400 mb-4">이미지를 탭하면 크게 볼 수 있어요. 분석을 시작할까요?</p>
+              {error && (
+                <div className="mb-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setImageFile(null); setPreview(null); setError(null); setStep("select"); }}
+                  className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-sm font-semibold text-gray-600 active:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button onClick={handleStartParse} className="flex-1 py-3.5 rounded-2xl bg-skku text-sm font-semibold text-white active:scale-95 transition-transform">분석 시작</button>
+              </div>
             </div>
           </div>
         )}
 
         {/* ── PARSING ── */}
         {step === "parsing" && (
-          <div className="max-w-md mx-auto flex flex-col items-center justify-center gap-5 py-12 px-5">
-            {preview && (
-              <div className="w-40 h-52 rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preview} alt="영수증" className="w-full h-full object-cover" />
-              </div>
-            )}
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-7 h-7 border-2 border-skku border-t-transparent rounded-full animate-spin" />
-              <p className="text-gray-600 font-medium text-sm">영수증을 인식하는 중...</p>
-            </div>
-            <div className="h-4" />
+          <div className="max-w-md mx-auto flex flex-col items-center justify-center gap-4 h-full px-5">
+            <div className="w-7 h-7 border-2 border-skku border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-600 font-medium text-sm">영수증을 분석하는 중...</p>
           </div>
         )}
 
         {/* ── CONFIRM ── */}
         {step === "confirm" && parsed && (
-          <div className="max-w-md mx-auto flex flex-col min-h-screen">
+          <div className="max-w-md mx-auto flex flex-col h-full">
             <header className="px-5 pt-12 pb-4 flex items-center justify-between flex-shrink-0">
-              <h2 className="text-xl font-bold text-gray-900">내용 확인</h2>
               <button
-                onClick={() => { setStep("select"); setParsed(null); setPreview(null); }}
+                onClick={() => { setStep("pre-confirm"); setParsed(null); }}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h2 className="text-base font-bold text-gray-900">내용 확인</h2>
+              <button
+                onClick={() => { setStep("select"); setParsed(null); setPreview(null); setRawText(""); }}
                 className="text-sm text-gray-400 active:text-gray-600"
               >
                 다시 찍기
@@ -227,29 +265,15 @@ export default function UploadSheet({ open, onClose }: Props) {
               <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
                 <div className="px-4 py-3.5 flex items-center justify-between">
                   <span className="text-sm text-gray-500">상호명</span>
-                  <input
-                    className="text-sm font-medium text-gray-900 text-right bg-transparent outline-none"
-                    value={parsed.store_name}
-                    onChange={(e) => setParsed({ ...parsed, store_name: e.target.value })}
-                  />
+                  <input className="text-sm font-medium text-gray-900 text-right bg-transparent outline-none" value={parsed.store_name} onChange={(e) => setParsed({ ...parsed, store_name: e.target.value })} />
                 </div>
                 <div className="px-4 py-3.5 flex items-center justify-between">
                   <span className="text-sm text-gray-500">날짜</span>
-                  <input
-                    type="date"
-                    className="text-sm font-medium text-gray-900 text-right bg-transparent outline-none"
-                    value={parsed.receipt_date}
-                    onChange={(e) => setParsed({ ...parsed, receipt_date: e.target.value })}
-                  />
+                  <input type="date" className="text-sm font-medium text-gray-900 text-right bg-transparent outline-none" value={parsed.receipt_date} onChange={(e) => setParsed({ ...parsed, receipt_date: e.target.value })} />
                 </div>
                 <div className="px-4 py-3.5 flex items-center justify-between">
                   <span className="text-sm text-gray-500">총액</span>
-                  <input
-                    type="number"
-                    className="text-sm font-bold text-skku text-right bg-transparent outline-none w-32"
-                    value={parsed.total_amount}
-                    onChange={(e) => setParsed({ ...parsed, total_amount: Number(e.target.value) })}
-                  />
+                  <input type="number" className="text-sm font-bold text-skku text-right bg-transparent outline-none w-32" value={parsed.total_amount} onChange={(e) => setParsed({ ...parsed, total_amount: Number(e.target.value) })} />
                 </div>
               </div>
 
@@ -260,64 +284,30 @@ export default function UploadSheet({ open, onClose }: Props) {
                 <div className="divide-y divide-gray-50">
                   {parsed.items.map((item, i) => (
                     <div key={i} className="px-4 py-3 space-y-2">
-                      <input
-                        className="text-sm font-medium text-gray-900 w-full bg-transparent outline-none border-b border-transparent focus:border-skku"
-                        value={item.menu_name}
-                        onChange={(e) => updateItem(i, "menu_name", e.target.value)}
-                      />
+                      <input className="text-sm font-medium text-gray-900 w-full bg-transparent outline-none border-b border-transparent focus:border-skku" value={item.menu_name} onChange={(e) => updateItem(i, "menu_name", e.target.value)} />
                       <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <input
-                          type="number"
-                          className="w-10 text-center bg-gray-50 rounded px-1.5 py-1 outline-none"
-                          value={item.quantity}
-                          onChange={(e) => updateItem(i, "quantity", e.target.value)}
-                        />
+                        <input type="number" className="w-10 text-center bg-gray-50 rounded px-1.5 py-1 outline-none" value={item.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} />
                         <span>개 ×</span>
-                        <input
-                          type="number"
-                          className="w-20 text-right bg-gray-50 rounded px-1.5 py-1 outline-none"
-                          value={item.unit_price}
-                          onChange={(e) => updateItem(i, "unit_price", e.target.value)}
-                        />
+                        <input type="number" className="w-20 text-right bg-gray-50 rounded px-1.5 py-1 outline-none" value={item.unit_price} onChange={(e) => updateItem(i, "unit_price", e.target.value)} />
                         <span>원</span>
-                        <span className="ml-auto font-semibold text-gray-700">
-                          {item.total_price.toLocaleString()}원
-                        </span>
+                        <span className="ml-auto font-semibold text-gray-700">{item.total_price.toLocaleString()}원</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {preview && (
-                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                  <p className="text-sm font-semibold text-gray-700 px-4 py-3 border-b border-gray-50">원본 이미지</p>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={preview} alt="영수증 원본" className="w-full object-contain max-h-64" />
-                </div>
-              )}
             </div>
 
-            {error && <p className="mx-4 mb-2 text-sm text-red-500 text-center">{error}</p>}
+            {error && <p className="mx-4 mb-2 text-sm text-red-500 text-center flex-shrink-0">{error}</p>}
             <div className="px-4 pb-8 pt-2 flex-shrink-0">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full py-4 bg-skku text-white font-semibold rounded-2xl active:scale-95 transition-transform disabled:opacity-60"
-              >
+              <button onClick={handleSave} disabled={saving} className="w-full py-4 bg-skku text-white font-semibold rounded-2xl active:scale-95 transition-transform disabled:opacity-60">
                 {saving ? "저장 중..." : "저장하기"}
               </button>
             </div>
           </div>
         )}
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleFileChange}
-        />
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       </div>
     </>
   );

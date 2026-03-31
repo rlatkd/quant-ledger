@@ -41,7 +41,7 @@ async function getRecentReceipts(): Promise<Receipt[]> {
     .limit(5);
 
   if (error) return DUMMY;
-  return (data as Receipt[]).length > 0 ? (data as Receipt[]) : DUMMY;
+  return data as Receipt[];
 }
 
 function formatAmount(amount: number): string {

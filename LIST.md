@@ -68,25 +68,12 @@ receipt_items
 
 ---
 
-## 발급 체크리스트
+## 체크리스트
+- [ ] ocr 부분 및 더미데이터 같이 안 쓰는 코드(더미데이터 아니더라도 안 쓰는 코드면) 다 삭제
+- [ ] gemini로 파싱한 영수증 총 결제금액하고 각 건별 결제금액을 합한 수가 맞는지 검증 후 검증 미통과시 다시 시도하게
+- [ ] 지정된 형식(영역 당 가로, 세로 정해져있음)에 맞게 문자열 파싱, 구매 건들이 너무 많으면 생략해서 파싱 후 pdf export
+- [ ] 배포 시에 빌드가 안 되는 것 해결
 
-> Gemini/Vision은 키 발급만 하면 끝. Supabase는 테이블 생성까지 있어서 마지막에.
-
-### 1. Gemini Flash API (파싱)
-- [ ] https://aistudio.google.com 접속 → "Get API key" 클릭
-- [ ] 키 복사 → `.env.local`에 `GEMINI_API_KEY` 입력
-
-### 2. Google Vision API (OCR)
-- [ ] https://console.cloud.google.com 접속 → 프로젝트 생성
-- [ ] "Cloud Vision API" 검색 → 사용 설정
-- [ ] API 및 서비스 → 사용자 인증 정보 → API 키 생성
-- [ ] 키 복사 → `.env.local`에 `GOOGLE_VISION_API_KEY` 입력
-
-### 3. Supabase (DB + 이미지 저장)
-- [ ] https://supabase.com 회원가입 → 프로젝트 생성
-- [ ] Project Settings → API → `URL`, `anon public` 키 복사
-- [ ] `.env.local`에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` 입력
-- [ ] SQL Editor에서 테이블 생성:
 
 ```sql
 create table receipts (

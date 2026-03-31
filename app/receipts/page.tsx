@@ -30,7 +30,7 @@ async function getReceipts(month?: string): Promise<Receipt[]> {
 
   const { data, error } = await query;
   if (error) return DUMMY;
-  return (data as Receipt[]).length > 0 ? (data as Receipt[]) : DUMMY;
+  return data as Receipt[];
 }
 
 function formatAmount(amount: number): string {

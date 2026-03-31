@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# project docs (내부용)
+LIST.md
+AGENTS.md
+CLAUDE.md
+/example
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
