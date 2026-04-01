@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import BottomNav from "./_components/BottomNav";
+import SessionGuard from "./_components/SessionGuard";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -25,6 +26,7 @@ export default function RootLayout({
           {children}
         </div>
         <BottomNav />
+        <SessionGuard />
       </body>
     </html>
   );

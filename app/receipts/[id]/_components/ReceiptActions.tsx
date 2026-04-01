@@ -13,7 +13,7 @@ export default function ReceiptActions({ receipt }: Props) {
 
   return (
     <>
-      <div className="flex gap-3 px-4 pb-8 pt-2">
+      <div className="flex gap-3 px-4 pb-8 pt-4">
         {/* 원본 이미지 보기 */}
         <button
           onClick={() => setImgOpen(true)}

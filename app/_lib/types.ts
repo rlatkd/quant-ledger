@@ -7,6 +7,21 @@ export interface ReceiptItem {
   total_price: number;
 }
 
+export interface User {
+  id: string;
+  student_id: string;
+  name: string | null;
+  card_number: string | null;
+  role: "member" | "admin";
+  created_at: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface Receipt {
   id: string;
   image_url: string;
@@ -14,8 +29,11 @@ export interface Receipt {
   receipt_date: string; // ISO date string "YYYY-MM-DD"
   total_amount: number;
   raw_text: string;
+  category_id?: string | null;
+  created_by?: string | null;
   created_at: string;
   receipt_items?: ReceiptItem[];
+  categories?: Category | null;
 }
 
 export interface ParsedReceipt {

@@ -3,18 +3,6 @@ import { supabase } from "../_lib/supabase";
 import type { Receipt } from "../_lib/types";
 import MonthSelect from "./_components/MonthSelect";
 
-const DUMMY: Receipt[] = [
-  {
-    id: "dummy-1",
-    image_url: "/1차_영수증.jpg",
-    store_name: "명륜포차",
-    receipt_date: "2026-03-28",
-    total_amount: 720000,
-    raw_text: "",
-    created_at: "2026-03-28T21:36:00Z",
-  },
-];
-
 async function getReceipts(month?: string): Promise<Receipt[]> {
   let query = supabase
     .from("receipts")
@@ -29,7 +17,7 @@ async function getReceipts(month?: string): Promise<Receipt[]> {
   }
 
   const { data, error } = await query;
-  if (error) return DUMMY;
+  if (error) return [];
   return data as Receipt[];
 }
 
@@ -59,26 +47,26 @@ export default async function ReceiptsPage(props: PageProps<"/receipts">) {
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="px-5 pt-12 pb-4">
+    <div className="h-[calc(100dvh-5rem)] flex flex-col">
+      <header className="px-5 pt-12 pb-4 flex-shrink-0">
         <h1 className="text-xl font-bold text-gray-900">영수증 목록</h1>
       </header>
 
       {/* 월 필터 */}
-      <div className="px-4 mb-4">
+      <div className="px-4 mb-4 flex-shrink-0">
         <MonthSelect months={months} current={month} />
       </div>
 
       {/* 합계 */}
       {receipts.length > 0 && (
-        <div className="mx-4 mb-4 px-4 py-3 bg-skku-light rounded-xl flex items-center justify-between">
+        <div className="mx-4 mb-4 px-4 py-3 bg-skku-light rounded-xl flex items-center justify-between flex-shrink-0">
           <span className="text-sm text-gray-600">{receipts.length}건</span>
           <span className="font-bold text-skku-dark">{formatAmount(total)}</span>
         </div>
       )}
 
       {/* 목록 */}
-      <div className="px-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 min-h-0">
         {receipts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <svg className="w-12 h-12 mb-3 text-gray-200" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">

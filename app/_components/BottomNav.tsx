@@ -11,6 +11,10 @@ export default function BottomNav() {
 
   const isHome = pathname === "/";
   const isList = pathname.startsWith("/receipts");
+  const isUpload = pathname.startsWith("/upload");
+  const isLogin = pathname === "/login";
+
+  if (isUpload || isLogin) return null;
 
   return (
     <>

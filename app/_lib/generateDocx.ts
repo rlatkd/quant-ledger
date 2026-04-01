@@ -45,7 +45,7 @@ const noBorder = {
   right: { style: BorderStyle.NONE, size: 0 },
 };
 
-function cell(text: string, opts?: { bold?: boolean; align?: AlignmentType; width?: number; shade?: boolean }) {
+function cell(text: string, opts?: { bold?: boolean; align?: string; width?: number; shade?: boolean }) {
   return new TableCell({
     borders: border,
     verticalAlign: VerticalAlign.CENTER,
@@ -53,7 +53,7 @@ function cell(text: string, opts?: { bold?: boolean; align?: AlignmentType; widt
     shading: opts?.shade ? { fill: "D9D9D9" } : undefined,
     children: [
       new Paragraph({
-        alignment: opts?.align ?? AlignmentType.CENTER,
+        alignment: (opts?.align ?? AlignmentType.CENTER) as typeof AlignmentType[keyof typeof AlignmentType],
         children: [new TextRun({ text, bold: opts?.bold ?? false, size: 20, font: "맑은 고딕" })],
       }),
     ],

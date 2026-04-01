@@ -5,32 +5,7 @@ import type { Receipt } from "../../_lib/types";
 import DeleteButton from "./_components/DeleteButton";
 import ReceiptActions from "./_components/ReceiptActions";
 
-const DUMMY_RECEIPT: Receipt = {
-  id: "dummy-1",
-  image_url: "/1차_영수증.jpg",
-  store_name: "명륜포차",
-  receipt_date: "2026-03-28",
-  total_amount: 720000,
-  raw_text: "",
-  created_at: "2026-03-28T21:36:00Z",
-  receipt_items: [
-    { id: "d-item-1", receipt_id: "dummy-1", menu_name: "두부김치", quantity: 1, unit_price: 30000, total_price: 30000 },
-    { id: "d-item-2", receipt_id: "dummy-1", menu_name: "오뎅(5개)", quantity: 1, unit_price: 8000, total_price: 8000 },
-    { id: "d-item-3", receipt_id: "dummy-1", menu_name: "참이슬(360ML)", quantity: 29, unit_price: 5000, total_price: 145000 },
-    { id: "d-item-4", receipt_id: "dummy-1", menu_name: "모듬전", quantity: 1, unit_price: 75000, total_price: 75000 },
-    { id: "d-item-5", receipt_id: "dummy-1", menu_name: "삼겹살", quantity: 2, unit_price: 55000, total_price: 110000 },
-    { id: "d-item-6", receipt_id: "dummy-1", menu_name: "소막창", quantity: 1, unit_price: 95000, total_price: 95000 },
-    { id: "d-item-7", receipt_id: "dummy-1", menu_name: "대창구이", quantity: 1, unit_price: 80000, total_price: 80000 },
-    { id: "d-item-8", receipt_id: "dummy-1", menu_name: "쏘맥잔", quantity: 2, unit_price: 5000, total_price: 10000 },
-    { id: "d-item-9", receipt_id: "dummy-1", menu_name: "감자전", quantity: 1, unit_price: 50000, total_price: 50000 },
-    { id: "d-item-10", receipt_id: "dummy-1", menu_name: "모듬김치", quantity: 1, unit_price: 23000, total_price: 23000 },
-    { id: "d-item-11", receipt_id: "dummy-1", menu_name: "부가세", quantity: 1, unit_price: 94000, total_price: 94000 },
-  ],
-};
-
 async function getReceipt(id: string): Promise<Receipt | null> {
-  if (id === "dummy-1") return DUMMY_RECEIPT;
-
   const { data, error } = await supabase
     .from("receipts")
     .select("*, receipt_items(*)")
@@ -71,11 +46,19 @@ export default async function ReceiptDetailPage(props: PageProps<"/receipts/[id]
           </svg>
         </Link>
         <h1 className="text-xl font-bold text-gray-900 flex-1 truncate">{receipt.store_name}</h1>
+        <Link
+          href={`/receipts/${id}/edit`}
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-colors"
+        >
+          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+          </svg>
+        </Link>
         <DeleteButton id={id} />
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
-        {/* 기본 정보 */}
+      {/* 고정: 기본 정보 */}
+      <div className="px-4 pb-3 flex-shrink-0">
         <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
           <div className="px-4 py-3.5 flex items-center justify-between">
             <span className="text-sm text-gray-500">날짜</span>
@@ -86,14 +69,15 @@ export default async function ReceiptDetailPage(props: PageProps<"/receipts/[id]
             <span className="text-base font-bold text-skku">{formatAmount(receipt.total_amount)}</span>
           </div>
         </div>
+      </div>
 
-        {/* 항목 테이블 */}
+      {/* 스크롤: 항목 테이블 */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
         {items.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50">
               <p className="text-sm font-semibold text-gray-700">항목 상세</p>
             </div>
-            {/* 헤더 */}
             <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-4 py-2 bg-gray-50 text-xs text-gray-400 font-medium">
               <span>품명</span>
               <span className="text-center">수량</span>
@@ -118,8 +102,6 @@ export default async function ReceiptDetailPage(props: PageProps<"/receipts/[id]
             </div>
           </div>
         )}
-
-
       </div>
 
       {/* 버튼 고정 */}

@@ -13,12 +13,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { store_name, receipt_date, total_amount, raw_text, image_url, items } = body;
+  const { store_name, receipt_date, total_amount, raw_text, image_url, category_id, items } = body;
 
   // 영수증 저장
   const { data: receipt, error } = await supabase
     .from("receipts")
-    .insert({ store_name, receipt_date, total_amount, raw_text, image_url })
+    .insert({ store_name, receipt_date, total_amount, raw_text, image_url, ...(category_id ? { category_id } : {}) })
     .select()
     .single();
 
