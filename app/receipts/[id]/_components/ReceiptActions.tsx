@@ -33,16 +33,32 @@ export default function ReceiptActions({ receipt }: Props) {
       {/* 이미지 모달 */}
       {imgOpen && (
         <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4"
           onClick={() => setImgOpen(false)}
         >
           <div className="relative max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setImgOpen(false)}
-              className="absolute -top-10 right-0 text-white/70 text-sm"
-            >
-              닫기
-            </button>
+            <div className="absolute -top-10 right-0 left-0 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  const link = document.createElement("a");
+                  link.href = receipt.image_url;
+                  link.download = `receipt-${receipt.store_name}-${receipt.receipt_date}.jpg`;
+                  link.click();
+                }}
+                className="text-white/70 text-sm flex items-center gap-1 active:text-white transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                저장
+              </button>
+              <button
+                onClick={() => setImgOpen(false)}
+                className="text-white/70 text-sm active:text-white transition-colors"
+              >
+                닫기
+              </button>
+            </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={receipt.image_url} alt="영수증 원본" className="w-full rounded-2xl" />
           </div>
