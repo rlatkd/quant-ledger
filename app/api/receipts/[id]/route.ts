@@ -20,28 +20,16 @@ export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/receipts/[
   const body = await req.json();
   const { store_name, receipt_date, total_amount, raw_text, items } = body;
 
-  const { error: receiptError } = await supabase
-    .from("receipts")
-    .update({ store_name, receipt_date, total_amount, raw_text })
-    .eq("id", id);
+  const { error } = await supabase.rpc("update_receipt", {
+    p_id: id,
+    p_store_name: store_name,
+    p_receipt_date: receipt_date,
+    p_total_amount: total_amount,
+    p_raw_text: raw_text ?? "",
+    p_items: JSON.stringify(items ?? []),
+  });
 
-  if (receiptError) return Response.json({ error: receiptError.message }, { status: 500 });
-
-  if (Array.isArray(items)) {
-    await supabase.from("receipt_items").delete().eq("receipt_id", id);
-    if (items.length > 0) {
-      const { error: itemsError } = await supabase.from("receipt_items").insert(
-        items.map((item: { menu_name: string; quantity: number; unit_price: number; total_price: number }) => ({
-          receipt_id: id,
-          menu_name: item.menu_name,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price,
-        }))
-      );
-      if (itemsError) return Response.json({ error: itemsError.message }, { status: 500 });
-    }
-  }
+  if (error) return Response.json({ error: error.message }, { status: 500 });
 
   revalidatePath("/");
   revalidatePath("/receipts");
@@ -52,9 +40,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/receipts/[
 export async function DELETE(_req: NextRequest, ctx: RouteContext<"/api/receipts/[id]">) {
   const { id } = await ctx.params;
 
-  // 항목 먼저 삭제 (FK 제약)
-  await supabase.from("receipt_items").delete().eq("receipt_id", id);
-
+  // receipt_items는 ON DELETE CASCADE로 자동 삭제
   const { error } = await supabase.from("receipts").delete().eq("id", id);
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
