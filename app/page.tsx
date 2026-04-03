@@ -1,36 +1,45 @@
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { supabase } from "./_lib/supabase";
 import type { Receipt } from "./_lib/types";
 
-async function getMonthlyTotal(): Promise<number> {
-  const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    .toISOString()
-    .split("T")[0];
+const getMonthlyTotal = unstable_cache(
+  async (): Promise<number> => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+      .toISOString()
+      .split("T")[0];
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      .toISOString()
+      .split("T")[0];
 
-  const { data } = await supabase
-    .from("receipts")
-    .select("total_amount")
-    .gte("receipt_date", firstDay)
-    .lte("receipt_date", lastDay);
+    const { data } = await supabase
+      .from("receipts")
+      .select("total_amount")
+      .gte("receipt_date", firstDay)
+      .lte("receipt_date", lastDay);
 
-  if (!data) return 0;
-  return data.reduce((sum, r) => sum + (r.total_amount ?? 0), 0);
-}
+    if (!data) return 0;
+    return data.reduce((sum, r) => sum + (r.total_amount ?? 0), 0);
+  },
+  ["monthly-total"],
+  { revalidate: 30 }
+);
 
-async function getRecentReceipts(): Promise<Receipt[]> {
-  const { data, error } = await supabase
-    .from("receipts")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(5);
+const getRecentReceipts = unstable_cache(
+  async (): Promise<Receipt[]> => {
+    const { data, error } = await supabase
+      .from("receipts")
+      .select("id, store_name, receipt_date, total_amount, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5);
 
-  if (error) return [];
-  return data as Receipt[];
-}
+    if (error) return [];
+    return data as Receipt[];
+  },
+  ["recent-receipts"],
+  { revalidate: 30 }
+);
 
 function formatAmount(amount: number): string {
   return amount.toLocaleString("ko-KR") + "원";

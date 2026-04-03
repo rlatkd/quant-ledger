@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabase } from "../../_lib/supabase";
 
 export async function GET() {
@@ -40,5 +41,7 @@ export async function POST(req: NextRequest) {
     if (itemsError) return Response.json({ error: itemsError.message }, { status: 500 });
   }
 
+  revalidatePath("/");
+  revalidatePath("/receipts");
   return Response.json(receipt, { status: 201 });
 }

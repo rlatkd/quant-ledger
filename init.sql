@@ -33,3 +33,9 @@ create table receipt_items (
   unit_price integer not null,
   total_price integer not null
 );
+
+-- 성능 인덱스
+create index idx_receipts_date on receipts (receipt_date desc);
+create index idx_receipts_created_at on receipts (created_at desc);
+create index idx_receipts_category on receipts (category_id);
+create index idx_receipt_items_receipt on receipt_items (receipt_id);

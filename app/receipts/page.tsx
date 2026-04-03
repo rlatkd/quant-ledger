@@ -1,12 +1,13 @@
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { supabase } from "../_lib/supabase";
 import type { Receipt } from "../_lib/types";
 import MonthSelect from "./_components/MonthSelect";
 
-async function getReceipts(month?: string): Promise<Receipt[]> {
+async function getReceiptsUncached(month?: string): Promise<Receipt[]> {
   let query = supabase
     .from("receipts")
-    .select("*")
+    .select("id, store_name, receipt_date, total_amount")
     .order("receipt_date", { ascending: false });
 
   if (month) {
@@ -19,6 +20,14 @@ async function getReceipts(month?: string): Promise<Receipt[]> {
   const { data, error } = await query;
   if (error) return [];
   return data as Receipt[];
+}
+
+function getReceipts(month?: string) {
+  return unstable_cache(
+    () => getReceiptsUncached(month),
+    ["receipts", month ?? "all"],
+    { revalidate: 30 }
+  )();
 }
 
 function formatAmount(amount: number): string {

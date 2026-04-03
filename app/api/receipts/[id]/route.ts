@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabase } from "../../../_lib/supabase";
 
 export async function GET(_req: NextRequest, ctx: RouteContext<"/api/receipts/[id]">) {
@@ -42,6 +43,9 @@ export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/receipts/[
     }
   }
 
+  revalidatePath("/");
+  revalidatePath("/receipts");
+  revalidatePath(`/receipts/${id}`);
   return Response.json({ success: true });
 }
 
@@ -54,5 +58,7 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext<"/api/receipts
   const { error } = await supabase.from("receipts").delete().eq("id", id);
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
+  revalidatePath("/");
+  revalidatePath("/receipts");
   return new Response(null, { status: 204 });
 }

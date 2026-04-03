@@ -1,19 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import { supabase } from "../../_lib/supabase";
 import type { Receipt } from "../../_lib/types";
 import DeleteButton from "./_components/DeleteButton";
 import ReceiptActions from "./_components/ReceiptActions";
 
-async function getReceipt(id: string): Promise<Receipt | null> {
-  const { data, error } = await supabase
-    .from("receipts")
-    .select("*, receipt_items(*)")
-    .eq("id", id)
-    .single();
+function getReceipt(id: string) {
+  return unstable_cache(
+    async (): Promise<Receipt | null> => {
+      const { data, error } = await supabase
+        .from("receipts")
+        .select("*, receipt_items(*)")
+        .eq("id", id)
+        .single();
 
-  if (error) return null;
-  return (data as Receipt) ?? null;
+      if (error) return null;
+      return (data as Receipt) ?? null;
+    },
+    ["receipt", id],
+    { revalidate: 30 }
+  )();
 }
 
 function formatAmount(amount: number): string {
