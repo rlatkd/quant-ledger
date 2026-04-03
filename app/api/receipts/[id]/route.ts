@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/receipts/[
     p_receipt_date: receipt_date,
     p_total_amount: total_amount,
     p_raw_text: raw_text ?? "",
-    p_items: JSON.stringify(items ?? []),
+    p_items: items ?? [],
   });
 
   if (error) return Response.json({ error: error.message }, { status: 500 });

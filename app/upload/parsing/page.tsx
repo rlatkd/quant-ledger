@@ -89,8 +89,9 @@ export default function ParsingPage() {
   }
 
   return (
-    <div className="h-[100dvh] flex flex-col">
-      <header className="px-4 pt-12 pb-4 flex-shrink-0">
+    <div className="h-[100dvh] relative flex items-center justify-center">
+      {/* 뒤로가기 — absolute로 레이아웃에서 분리 */}
+      <header className="absolute top-0 left-0 px-4 pt-12">
         <button
           onClick={handleCancel}
           className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-colors"
@@ -101,7 +102,7 @@ export default function ParsingPage() {
         </button>
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center gap-4">
+      <div className="flex flex-col items-center gap-4">
         <div className="w-7 h-7 border-2 border-skku border-t-transparent rounded-full animate-spin" />
         <p className="text-gray-600 font-medium text-sm">영수증을 분석하는 중...</p>
       </div>

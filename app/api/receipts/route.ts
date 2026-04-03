@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     p_raw_text: raw_text ?? "",
     p_image_url: image_url ?? null,
     p_category_id: category_id ?? null,
-    p_items: JSON.stringify(items ?? []),
+    p_items: items ?? [],
   });
 
   if (error) return Response.json({ error: error.message }, { status: 500 });

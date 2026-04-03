@@ -137,7 +137,7 @@ export default function UploadSheet({ open, onClose }: Props) {
             <div className="px-5 pt-4 pb-5">
               <h2 className="text-base font-bold text-gray-900 mb-1">이미지 분석</h2>
               <p className="text-sm text-gray-400 mb-4">
-                Gemini AI로 영수증을 분석합니다.{" "}
+                영수증을 분석합니다.{" "}
                 <span className="text-skku">이미지를 탭하면 크게 볼 수 있어요.</span>
               </p>
               {error && (

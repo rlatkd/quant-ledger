@@ -85,17 +85,17 @@ export default async function ReceiptDetailPage(props: PageProps<"/receipts/[id]
             <div className="px-4 py-3 border-b border-gray-50">
               <p className="text-sm font-semibold text-gray-700">항목 상세</p>
             </div>
-            <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-4 py-2 bg-gray-50 text-xs text-gray-400 font-medium">
+            <div className="grid grid-cols-[1fr_3rem_5.5rem] gap-x-2 px-4 py-2 bg-gray-50 text-xs text-gray-400 font-medium">
               <span>품명</span>
               <span className="text-center">수량</span>
               <span className="text-right">금액</span>
             </div>
             <div className="divide-y divide-gray-50">
               {items.map((item, i) => (
-                <div key={item.id ?? i} className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-4 py-3 items-center">
+                <div key={item.id ?? i} className="grid grid-cols-[1fr_3rem_5.5rem] gap-x-2 px-4 py-3 items-center">
                   <span className="text-sm text-gray-800 truncate">{item.menu_name}</span>
                   <span className="text-sm text-gray-500 text-center">{item.quantity}</span>
-                  <span className="text-sm font-medium text-gray-900 text-right">
+                  <span className="text-sm font-medium text-gray-900 text-right whitespace-nowrap">
                     {formatAmount(item.total_price)}
                   </span>
                 </div>

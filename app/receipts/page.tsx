@@ -1,20 +1,22 @@
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
 import { supabase } from "../_lib/supabase";
-import type { Receipt } from "../_lib/types";
-import MonthSelect from "./_components/MonthSelect";
+import type { Receipt, Category } from "../_lib/types";
+import CategorySelect from "./_components/CategorySelect";
 
-async function getReceiptsUncached(month?: string): Promise<Receipt[]> {
+async function getCategories(): Promise<Category[]> {
+  const { data } = await supabase.from("categories").select("*").order("name");
+  return (data ?? []) as Category[];
+}
+
+async function getReceiptsUncached(categoryId?: string): Promise<Receipt[]> {
   let query = supabase
     .from("receipts")
     .select("id, store_name, receipt_date, total_amount")
     .order("receipt_date", { ascending: false });
 
-  if (month) {
-    const [year, m] = month.split("-");
-    const firstDay = `${year}-${m}-01`;
-    const lastDay = new Date(Number(year), Number(m), 0).toISOString().split("T")[0];
-    query = query.gte("receipt_date", firstDay).lte("receipt_date", lastDay);
+  if (categoryId) {
+    query = query.eq("category_id", categoryId);
   }
 
   const { data, error } = await query;
@@ -22,10 +24,10 @@ async function getReceiptsUncached(month?: string): Promise<Receipt[]> {
   return data as Receipt[];
 }
 
-function getReceipts(month?: string) {
+function getReceipts(categoryId?: string) {
   return unstable_cache(
-    () => getReceiptsUncached(month),
-    ["receipts", month ?? "all"],
+    () => getReceiptsUncached(categoryId),
+    ["receipts", categoryId ?? "all"],
     { revalidate: 30 }
   )();
 }
@@ -40,30 +42,25 @@ function formatDate(dateStr: string): string {
 }
 
 export default async function ReceiptsPage(props: PageProps<"/receipts">) {
-  const { month } = await props.searchParams as { month?: string };
+  const { category } = await props.searchParams as { category?: string };
 
-  const receipts = await getReceipts(month);
+  const [receipts, categories] = await Promise.all([
+    getReceipts(category),
+    getCategories(),
+  ]);
+
   const total = receipts.reduce((s, r) => s + r.total_amount, 0);
-
-  // 월 선택 목록 (최근 6개월)
-  const months: string[] = [];
-  const now = new Date();
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-    );
-  }
 
   return (
     <div className="h-[calc(100dvh-5rem)] flex flex-col">
-      <header className="px-5 pt-12 pb-4 flex-shrink-0">
-        <h1 className="text-xl font-bold text-gray-900">영수증 목록</h1>
+      <header className="bg-skku px-5 pt-6 pb-7 flex-shrink-0">
+        <h1 className="text-white text-2xl font-medium mb-1">성균관대학교</h1>
+        <h1 className="text-white text-2xl font-medium mb-1">퀀트응용경제학과</h1>
       </header>
 
-      {/* 월 필터 */}
-      <div className="px-4 mb-4 flex-shrink-0">
-        <MonthSelect months={months} current={month} />
+      {/* 카테고리 필터 */}
+      <div className="px-4 mt-4 mb-4 flex-shrink-0">
+        <CategorySelect categories={categories} current={category} />
       </div>
 
       {/* 합계 */}
@@ -75,15 +72,15 @@ export default async function ReceiptsPage(props: PageProps<"/receipts">) {
       )}
 
       {/* 목록 */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4 min-h-0">
-        {receipts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <svg className="w-12 h-12 mb-3 text-gray-200" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-            </svg>
-            <p className="text-sm">영수증이 없습니다</p>
-          </div>
-        ) : (
+      {receipts.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+          <svg className="w-12 h-12 mb-3 text-gray-200" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+          </svg>
+          <p className="text-sm">영수증이 없습니다</p>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto px-4 pb-4 min-h-0">
           <ul className="space-y-3">
             {receipts.map((receipt) => (
               <li key={receipt.id}>
@@ -107,8 +104,8 @@ export default async function ReceiptsPage(props: PageProps<"/receipts">) {
               </li>
             ))}
           </ul>
+        </div>
         )}
       </div>
-    </div>
   );
 }

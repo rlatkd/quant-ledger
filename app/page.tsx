@@ -3,41 +3,50 @@ import { unstable_cache } from "next/cache";
 import { supabase } from "./_lib/supabase";
 import type { Receipt } from "./_lib/types";
 
-const getMonthlyTotal = unstable_cache(
-  async (): Promise<number> => {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-      .toISOString()
-      .split("T")[0];
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-      .toISOString()
-      .split("T")[0];
+const BUDGET = 3_600_000;
 
-    const { data } = await supabase
-      .from("receipts")
-      .select("total_amount")
-      .gte("receipt_date", firstDay)
-      .lte("receipt_date", lastDay);
+const CATEGORY_COLORS = [
+  "#005b36", "#40916c", "#74c69d",
+  "#2d6a4f", "#1b4332", "#95d5b2",
+  "#52b788", "#d8f3dc",
+];
 
-    if (!data) return 0;
-    return data.reduce((sum, r) => sum + (r.total_amount ?? 0), 0);
+interface CategoryStat {
+  name: string;
+  total: number;
+}
+
+const getDashboardData = unstable_cache(
+  async (): Promise<{
+    totalSpent: number;
+    categoryStats: CategoryStat[];
+    recentReceipts: Receipt[];
+  }> => {
+    const [receiptsRes, recentRes] = await Promise.all([
+      supabase.from("receipts").select("total_amount, categories(name)"),
+      supabase
+        .from("receipts")
+        .select("id, store_name, receipt_date, total_amount")
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+
+    const receipts = receiptsRes.data ?? [];
+    const totalSpent = receipts.reduce((s, r) => s + (r.total_amount ?? 0), 0);
+
+    const map = new Map<string, number>();
+    for (const r of receipts) {
+      const cat = r.categories as unknown as { name: string } | null;
+      const name = cat?.name ?? "미분류";
+      map.set(name, (map.get(name) ?? 0) + (r.total_amount ?? 0));
+    }
+    const categoryStats = Array.from(map.entries())
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total);
+
+    return { totalSpent, categoryStats, recentReceipts: (recentRes.data ?? []) as Receipt[] };
   },
-  ["monthly-total"],
-  { revalidate: 30 }
-);
-
-const getRecentReceipts = unstable_cache(
-  async (): Promise<Receipt[]> => {
-    const { data, error } = await supabase
-      .from("receipts")
-      .select("id, store_name, receipt_date, total_amount, created_at")
-      .order("created_at", { ascending: false })
-      .limit(5);
-
-    if (error) return [];
-    return data as Receipt[];
-  },
-  ["recent-receipts"],
+  ["dashboard"],
   { revalidate: 30 }
 );
 
@@ -50,84 +59,177 @@ function formatDate(dateStr: string): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
-export default async function HomePage() {
-  const [monthlyTotal, recentReceipts] = await Promise.all([
-    getMonthlyTotal(),
-    getRecentReceipts(),
-  ]);
+function polarToCartesian(cx: number, cy: number, r: number, deg: number) {
+  const rad = ((deg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
 
-  const now = new Date();
-  const monthLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월`;
+function donutArc(cx: number, cy: number, r: number, ir: number, start: number, end: number) {
+  const s1 = polarToCartesian(cx, cy, r, end);
+  const e1 = polarToCartesian(cx, cy, r, start);
+  const s2 = polarToCartesian(cx, cy, ir, end);
+  const e2 = polarToCartesian(cx, cy, ir, start);
+  const large = end - start > 180 ? 1 : 0;
+  return `M${s1.x} ${s1.y} A${r} ${r} 0 ${large} 0 ${e1.x} ${e1.y} L${e2.x} ${e2.y} A${ir} ${ir} 0 ${large} 1 ${s2.x} ${s2.y}Z`;
+}
+
+function DonutChart({ stats, total }: { stats: CategoryStat[]; total: number }) {
+  const cx = 88, cy = 88, r = 72, ir = 46;
+
+  let cumAngle = 0;
+  const slices = stats.map((cat, i) => {
+    const pct = total > 0 ? cat.total / total : 0;
+    const sweep = pct * 359.99; // 359.99 to avoid full-circle edge case
+    const start = cumAngle;
+    cumAngle += sweep;
+    return { ...cat, start, end: cumAngle, color: CATEGORY_COLORS[i % CATEGORY_COLORS.length] };
+  });
+
+  return (
+    <svg width={176} height={176} viewBox="0 0 176 176">
+      {total === 0 ? (
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f3f4f6" strokeWidth={r - ir} />
+      ) : (
+        slices.map((s, i) => (
+          <path key={i} d={donutArc(cx, cy, r, ir, s.start, s.end)} fill={s.color} />
+        ))
+      )}
+      <text x={cx} y={cy - 8} textAnchor="middle" fontSize="11" fill="#9ca3af">총지출</text>
+      <text x={cx} y={cy + 10} textAnchor="middle" fontSize="14" fontWeight="bold" fill="#111827">
+        {total === 0 ? "0원" : `${Math.round(total / 10000)}만원`}
+      </text>
+    </svg>
+  );
+}
+
+export default async function HomePage() {
+  const { totalSpent, categoryStats, recentReceipts } = await getDashboardData();
+
+  const remaining = BUDGET - totalSpent;
+  const usedPct = Math.min(100, Math.round((totalSpent / BUDGET) * 100));
+  const isOverBudget = totalSpent > BUDGET;
+
+  const cardClass = "bg-white rounded-2xl border border-gray-100";
+  const cardHeader = "px-4 py-3 border-b border-gray-100 flex items-center justify-between";
 
   return (
     <div className="h-[calc(100dvh-5rem)] flex flex-col">
       {/* 헤더 */}
-      <header className="bg-skku px-5 pt-12 pb-8 flex-shrink-0">
-        <p className="text-skku-light text-sm font-medium mb-1">성균관대학교 퀀트응용경제학과</p>
-        <h1 className="text-white text-2xl font-bold">총무부 장부</h1>
+      <header className="bg-skku px-5 pt-6 pb-7 flex-shrink-0">
+        <h1 className="text-white text-2xl font-medium mb-1">성균관대학교</h1>
+        <h1 className="text-white text-2xl font-medium mb-1">퀀트응용경제학과</h1>
       </header>
 
-      {/* 이번달 총지출 카드 */}
-      <div className="px-4 -mt-4 flex-shrink-0">
-        <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
-          <p className="text-gray-500 text-sm">{monthLabel} 총지출</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">
-            {formatAmount(monthlyTotal)}
-          </p>
-          <Link
-            href="/receipts"
-            className="inline-flex items-center gap-1 text-skku text-sm font-medium mt-3"
-          >
-            전체 내역 보기
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
-            </svg>
-          </Link>
-        </div>
-      </div>
-
-      {/* 최근 영수증 — 이 영역만 스크롤 */}
-      <div className="flex-1 flex flex-col min-h-0 px-4 mt-6">
-        <div className="flex items-center justify-between mb-3 flex-shrink-0">
-          <h2 className="text-base font-semibold text-gray-900">최근 내역</h2>
-          <Link href="/receipts" className="text-sm text-gray-400">
-            전체보기
-          </Link>
-        </div>
-
-        {recentReceipts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center flex-1 text-gray-400">
-            <svg className="w-12 h-12 mb-3 text-gray-200" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z" />
-            </svg>
-            <p className="text-sm">등록된 영수증이 없습니다</p>
+      {/* 예산 카드 */}
+      <div className="px-4 -mt-5 flex-shrink-0">
+        <div className={`${cardClass} shadow-sm px-5 py-5`}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-xs text-gray-400 mb-1">총 지원금액</p>
+              <p className="text-xl font-bold text-gray-900">{formatAmount(BUDGET)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-400 mb-1">잔여금액</p>
+              <p className={`text-xl font-bold ${isOverBudget ? "text-red-500" : "text-skku"}`}>
+                {isOverBudget ? "초과 " : ""}{formatAmount(Math.abs(remaining))}
+              </p>
+            </div>
           </div>
-        ) : (
-          <ul className="overflow-y-auto space-y-3 pb-4">
-            {recentReceipts.map((receipt) => (
-              <li key={receipt.id}>
-                <Link
-                  href={`/receipts/${receipt.id}`}
-                  className="flex items-center justify-between bg-white rounded-xl px-4 py-3.5 border border-gray-100 active:bg-gray-50 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">{receipt.store_name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{formatDate(receipt.receipt_date)}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-800 text-sm">
-                      {formatAmount(receipt.total_amount)}
-                    </span>
-                    <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
-                    </svg>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+            <div
+              className={`h-full rounded-full ${isOverBudget ? "bg-red-400" : "bg-skku"}`}
+              style={{ width: `${usedPct}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs text-gray-400">
+            <span>사용 <span className="font-medium text-gray-600">{formatAmount(totalSpent)}</span></span>
+            <span>{usedPct}%</span>
+          </div>
+        </div>
       </div>
+
+      {/* 카테고리별 지출 */}
+      <div className="px-4 mt-4 flex-shrink-0">
+        <div className={cardClass}>
+          <div className={cardHeader}>
+            <p className="text-sm font-semibold text-gray-700">카테고리별 지출</p>
+          </div>
+          {categoryStats.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
+              <DonutChart stats={[]} total={0} />
+              <p className="text-xs text-gray-300">내역이 없습니다</p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4 px-4 py-4">
+              <div className="flex-shrink-0">
+                <DonutChart stats={categoryStats} total={totalSpent} />
+              </div>
+              <div className="flex-1 space-y-2.5 min-w-0">
+                {categoryStats.map((cat, i) => {
+                  const pct = totalSpent > 0 ? Math.round((cat.total / totalSpent) * 100) : 0;
+                  return (
+                    <div key={cat.name}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }}
+                          />
+                          <span className="text-xs text-gray-600 truncate">{cat.name}</span>
+                        </div>
+                        <span className="text-xs font-semibold text-gray-800 ml-1 flex-shrink-0">{pct}%</span>
+                      </div>
+                      <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${pct}%`, backgroundColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 최근 내역 */}
+      <div className="flex-1 min-h-0 flex flex-col px-4 mt-4">
+        <div className={`${cardClass} flex-1 min-h-0 flex flex-col`}>
+          <div className={`${cardHeader} flex-shrink-0`}>
+            <p className="text-sm font-semibold text-gray-700">최근 내역</p>
+          </div>
+          {recentReceipts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center flex-1 text-gray-300">
+              <p className="text-sm">등록된 영수증이 없습니다</p>
+            </div>
+          ) : (
+            <ul className="overflow-y-auto divide-y divide-gray-50 pb-2">
+              {recentReceipts.map((receipt) => (
+                <li key={receipt.id}>
+                  <Link
+                    href={`/receipts/${receipt.id}`}
+                    className="flex items-center justify-between px-4 py-3.5 active:bg-gray-50 transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{receipt.store_name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{formatDate(receipt.receipt_date)}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-800 text-sm">{formatAmount(receipt.total_amount)}</span>
+                      <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
+                      </svg>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+      <div className="pb-4 flex-shrink-0" />
     </div>
   );
 }

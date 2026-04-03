@@ -43,8 +43,8 @@ export default function CategoryPage() {
       setSelectedId(created.id);
       setNewName("");
       setAddingNew(false);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "카테고리 생성에 실패했습니다.");
+    } catch {
+      setError("카테고리 생성에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setCreating(false);
     }
@@ -54,6 +54,19 @@ export default function CategoryPage() {
     setSaving(true);
     setError(null);
     try {
+      // 새 카테고리 입력 중이면 먼저 생성
+      let resolvedId = selectedId;
+      if (addingNew && newName.trim()) {
+        const res = await fetch("/api/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newName.trim() }),
+        });
+        if (!res.ok) throw new Error();
+        const created: Category = await res.json();
+        resolvedId = created.id;
+      }
+
       const stored = sessionStorage.getItem("upload_parsed");
       if (!stored) throw new Error();
       const parsed: ParsedReceipt & { raw_text?: string } = JSON.parse(stored);
@@ -70,7 +83,7 @@ export default function CategoryPage() {
           ...parsed,
           raw_text: parsed.raw_text ?? "",
           image_url: imageUrl,
-          category_id: selectedId,
+          category_id: resolvedId,
         }),
       });
       if (!res.ok) throw new Error();
