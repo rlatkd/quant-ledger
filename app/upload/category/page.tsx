@@ -86,7 +86,7 @@ export default function CategoryPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col max-w-md mx-auto">
+    <div className="h-[100dvh] flex flex-col max-w-md mx-auto">
       <header className="px-5 pt-12 pb-4 flex items-center gap-3 flex-shrink-0">
         <button
           onClick={() => router.back()}

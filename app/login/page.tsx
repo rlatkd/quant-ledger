@@ -43,7 +43,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gray-50">
+    <div className="h-[100dvh] flex flex-col items-center justify-center px-6 bg-gray-50">
       {/* 로고 영역 */}
       <div className="mb-8 text-center">
         <div className="w-14 h-14 rounded-2xl bg-skku flex items-center justify-center mx-auto mb-4 shadow-md">
