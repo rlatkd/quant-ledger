@@ -31,7 +31,6 @@ export function proxy(request: NextRequest) {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: Math.ceil(SESSION_DURATION / 1000),
     });
     // JS에서 읽을 수 있는 만료시간 쿠키 (SessionGuard용)
     res.cookies.set(SESSION_EXP_COOKIE, String(newExpiresAt), {
@@ -39,7 +38,6 @@ export function proxy(request: NextRequest) {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: Math.ceil(SESSION_DURATION / 1000),
     });
     return res;
   } catch {

@@ -47,12 +47,10 @@ export async function POST(req: NextRequest) {
 
   const expiresAt = Date.now() + SESSION_DURATION;
   const sessionValue = btoa(JSON.stringify({ userId, expiresAt }));
-  const maxAge = Math.ceil(SESSION_DURATION / 1000);
   const cookieOpts = {
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge,
   };
 
   const res = NextResponse.json({ userId, role });
