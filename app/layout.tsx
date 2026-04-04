@@ -12,6 +12,16 @@ const geist = Geist({
 export const metadata: Metadata = {
   title: "퀀트 장부",
   description: "성균관대학교 퀀트응용경제학과 총무부 영수증 관리",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "퀀트 장부",
+  },
 };
 
 export const viewport: Viewport = {

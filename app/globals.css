@@ -41,3 +41,10 @@ a, a *, button, button *, select, label, [role="button"] {
 input, textarea {
   cursor: text !important;
 }
+
+/* PWA(standalone) 모드에서만 하단 safe area 패딩 적용 */
+@media (display-mode: standalone) {
+  .pwa-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
