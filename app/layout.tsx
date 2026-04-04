@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import BottomNav from "./_components/BottomNav";
 import SessionGuard from "./_components/SessionGuard";
+import PwaGuard from "./_components/PwaGuard";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
         </div>
         <BottomNav />
         <SessionGuard />
+        <PwaGuard />
       </body>
     </html>
   );

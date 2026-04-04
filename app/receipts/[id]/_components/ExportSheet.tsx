@@ -106,12 +106,27 @@ function SignaturePad({ onChange }: { onChange: (dataUrl: string) => void }) {
   );
 }
 
+const MAX_DETAIL_LINES = 3;
+
+function DetailLines({ storeName, items }: { storeName: string; items: NonNullable<Receipt["receipt_items"]> }) {
+  const shown = items.slice(0, MAX_DETAIL_LINES);
+  const remaining = items.length - MAX_DETAIL_LINES;
+  return (
+    <div>
+      <p>{storeName}</p>
+      {shown.map((item, i) => (
+        <p key={i}>- {item.menu_name}/{item.quantity}/{formatAmount(item.total_price)}</p>
+      ))}
+      {remaining > 0 && <p>이하 {remaining}건</p>}
+    </div>
+  );
+}
+
 export default function ExportSheet({ receipt }: Props) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("form");
   const [info, setInfo] = useState<ExportInfo>({ name: "", studentId: "", cardNumber: "", reason: "" });
   const [signature, setSignature] = useState("");
-  const [downloading, setDownloading] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const items = receipt.receipt_items ?? [];
@@ -137,19 +152,7 @@ export default function ExportSheet({ receipt }: Props) {
     setStep("form");
   }
 
-  async function handleWordDownload() {
-    setDownloading(true);
-    try {
-      const { generateDocx } = await import("../../../_lib/generateDocx");
-      const { saveAs } = await import("file-saver");
-      const blob = await generateDocx(receipt, info, signature);
-      saveAs(blob, `개인카드사용사유서_${receipt.store_name}_${receipt.receipt_date}.docx`);
-    } finally {
-      setDownloading(false);
-    }
-  }
-
-  function handlePdfPrint() {
+  function handlePdfDownload() {
     window.print();
   }
 
@@ -225,62 +228,73 @@ export default function ExportSheet({ receipt }: Props) {
 
           {/* ── STEP 2: 미리보기 ── */}
           {step === "preview" && (
-            <div className="flex-1 overflow-y-auto px-4 pb-4">
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 text-[11px] leading-relaxed print:border-none print:rounded-none print:p-8 print:text-sm">
-                <p className="text-right mb-6">{info.name} {info.studentId}</p>
+            <div className="flex-1 overflow-y-auto px-4 pb-4 print:overflow-visible print:p-0">
+              <div
+                className="bg-white border border-gray-200 rounded-2xl text-[11px] leading-relaxed
+                  print:border-none print:rounded-none print:shadow-none print:text-sm print:leading-normal"
+                style={{ padding: "24px" }}
+                id="print-area"
+              >
+                {/* 이름 학번 */}
+                <p className="text-right mb-6 print:mb-8">{info.name} {info.studentId}</p>
 
-                <h1 className="text-center text-xl font-bold tracking-widest mb-8">개인카드  사용  사유서</h1>
+                {/* 제목 */}
+                <h1 className="text-center text-xl font-bold tracking-widest mb-8 print:text-3xl print:mb-10">
+                  개인카드&nbsp;&nbsp;사용&nbsp;&nbsp;사유서
+                </h1>
 
-                <p className="font-bold mb-1.5">□  개인카드 사용 내역</p>
-                <table className="w-full border-collapse mb-5 text-center">
+                {/* 섹션1 */}
+                <p className="font-bold mb-1.5 print:mb-2">□&nbsp;&nbsp;개인카드 사용 내역</p>
+                <table className="w-full border-collapse mb-5 text-center print:mb-6">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="border border-gray-400 px-1 py-1.5 w-8">연번</th>
-                      <th className="border border-gray-400 px-1 py-1.5 w-20">카드사용일</th>
-                      <th className="border border-gray-400 px-1 py-1.5 w-16">금액</th>
-                      <th className="border border-gray-400 px-1 py-1.5">카드번호</th>
-                      <th className="border border-gray-400 px-1 py-1.5 w-20">사용처</th>
+                      <th className="border border-gray-500 px-1 py-1.5 w-8">연번</th>
+                      <th className="border border-gray-500 px-1 py-1.5 w-20">카드사용일</th>
+                      <th className="border border-gray-500 px-1 py-1.5 w-16">금액</th>
+                      <th className="border border-gray-500 px-1 py-1.5">카드번호</th>
+                      <th className="border border-gray-500 px-1 py-1.5 w-20">사용처</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-gray-400 px-1 py-1.5">1</td>
-                      <td className="border border-gray-400 px-1 py-1.5">{formatDate(receipt.receipt_date)}</td>
-                      <td className="border border-gray-400 px-1 py-1.5">{formatAmount(receipt.total_amount)}</td>
-                      <td className="border border-gray-400 px-1 py-1.5">{info.cardNumber}</td>
-                      <td className="border border-gray-400 px-1 py-1.5 text-left px-2">{receipt.store_name}</td>
+                      <td className="border border-gray-500 px-1 py-1.5">1</td>
+                      <td className="border border-gray-500 px-1 py-1.5">{formatDate(receipt.receipt_date)}</td>
+                      <td className="border border-gray-500 px-1 py-1.5">{formatAmount(receipt.total_amount)}</td>
+                      <td className="border border-gray-500 px-1 py-1.5">{info.cardNumber}</td>
+                      <td className="border border-gray-500 px-1 py-1.5 text-left px-2">{receipt.store_name}</td>
                     </tr>
-                    <tr><td className="border border-gray-400 py-1.5" colSpan={5} /></tr>
+                    <tr><td className="border border-gray-500 py-3" colSpan={5} /></tr>
                     <tr>
-                      <td className="border border-gray-400 px-1 py-1.5 font-bold" colSpan={2}>합계</td>
-                      <td className="border border-gray-400 px-1 py-1.5 font-bold">{formatAmount(receipt.total_amount)}</td>
-                      <td className="border border-gray-400 py-1.5" colSpan={2} />
+                      <td className="border border-gray-500 px-1 py-1.5 font-bold" colSpan={2}>합계</td>
+                      <td className="border border-gray-500 px-1 py-1.5 font-bold">{formatAmount(receipt.total_amount)}</td>
+                      <td className="border border-gray-500 py-1.5" colSpan={2} />
                     </tr>
                   </tbody>
                 </table>
 
-                <p className="font-bold mb-1.5">□  개인카드 사용 사유</p>
-                <div className="border border-gray-400 px-3 py-3 mb-5 min-h-[60px]">{info.reason}</div>
-
-                <p className="font-bold mb-1.5">□  사용상세내역  (사용처가 식사/음주 관련 업종일 경우 작성)</p>
-                <div className="border border-gray-400 px-3 py-3 mb-8 min-h-[60px]">
-                  <p>{receipt.store_name}</p>
-                  {items.map((item, i) => (
-                    <p key={i}>- {item.menu_name}/{item.quantity}/{formatAmount(item.total_price)}</p>
-                  ))}
+                {/* 섹션2 */}
+                <p className="font-bold mb-1.5 print:mb-2">□&nbsp;&nbsp;개인카드 사용 사유</p>
+                <div className="border border-gray-500 px-3 py-3 mb-5 min-h-[60px] print:min-h-[80px] print:mb-6">
+                  {info.reason}
                 </div>
 
-                <p className="text-center mb-8">
+                {/* 섹션3 */}
+                <p className="font-bold mb-1.5 print:mb-2">□&nbsp;&nbsp;사용상세내역&nbsp;&nbsp;(사용처가 식사/음주 관련 업종일 경우 작성)</p>
+                <div className="border border-gray-500 px-3 py-3 mb-8 min-h-[60px] print:min-h-[80px] print:mb-12">
+                  <DetailLines storeName={receipt.store_name} items={items} />
+                </div>
+
+                {/* 날짜 */}
+                <p className="text-center mb-8 print:mb-12">
                   {formatDate(receipt.receipt_date).replace(/\./g, " . ").replace(/ \. $/, "")}
                 </p>
 
-                {/* 서명 영역 */}
+                {/* 서명 */}
                 <div className="flex justify-center">
                   <div className="flex items-end gap-3">
-                    <span className="font-bold text-sm">사용자 :</span>
-                    <span className="border-b border-gray-400 w-24 text-center pb-0.5">{info.name}</span>
-                    {/* (인) 위에 서명 겹침 */}
-                    <div className="relative w-10 h-10 flex items-center justify-center">
+                    <span className="font-bold text-sm print:text-base">사용자 :</span>
+                    <span className="border-b border-gray-500 w-24 text-center pb-0.5 print:w-32">{info.name}</span>
+                    <div className="relative w-10 h-10 flex items-center justify-center print:w-14 print:h-14">
                       <span className="text-gray-500 text-sm select-none">(인)</span>
                       {signature && (
                         /* eslint-disable-next-line @next/next/no-img-element */
@@ -302,7 +316,6 @@ export default function ExportSheet({ receipt }: Props) {
             {step === "form" ? (
               <button
                 onClick={() => {
-                  // 이름/카드번호 변경 시 DB에 저장
                   fetch("/api/auth/me", {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
@@ -316,21 +329,12 @@ export default function ExportSheet({ receipt }: Props) {
                 미리보기
               </button>
             ) : (
-              <div className="flex gap-3">
-                <button
-                  onClick={handlePdfPrint}
-                  className="flex-1 py-3.5 rounded-2xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 active:bg-gray-50 transition-colors"
-                >
-                  PDF 저장
-                </button>
-                <button
-                  onClick={handleWordDownload}
-                  disabled={downloading}
-                  className="flex-1 py-3.5 rounded-2xl bg-skku text-sm font-semibold text-white active:scale-95 transition-transform disabled:opacity-60"
-                >
-                  {downloading ? "생성 중..." : "Word 다운로드"}
-                </button>
-              </div>
+              <button
+                onClick={handlePdfDownload}
+                className="w-full py-4 bg-skku text-white font-semibold rounded-2xl active:scale-95 transition-transform"
+              >
+                PDF 저장
+              </button>
             )}
           </div>
         </div>
@@ -340,6 +344,7 @@ export default function ExportSheet({ receipt }: Props) {
         @media print {
           body > * { display: none !important; }
           .fixed.inset-0.z-50 { display: block !important; position: static !important; }
+          #print-area { padding: 40px !important; }
         }
       `}</style>
     </>
