@@ -113,26 +113,20 @@ export default async function HomePage() {
   const cardHeader = "px-4 py-3 border-b border-gray-100 flex items-center justify-between";
 
   return (
-    <div className="h-[calc(100dvh-5rem)] flex flex-col">
-      {/* 헤더 */}
-      <header className="bg-skku px-5 pt-6 pb-7 flex-shrink-0">
-        <h1 className="text-white text-2xl font-medium mb-1">성균관대학교</h1>
-        <h1 className="text-white text-2xl font-medium mb-1">퀀트응용경제학과</h1>
-      </header>
-
+    <div className="h-[calc(100dvh-5rem)] flex flex-col pt-6">
       {/* 예산 카드 */}
-      <div className="px-4 -mt-5 flex-shrink-0">
+      <div className="px-4 flex-shrink-0">
         <div className={`${cardClass} shadow-sm px-5 py-5`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs text-gray-400 mb-1">총 지원금액</p>
-              <p className="text-xl font-bold text-gray-900">{formatAmount(BUDGET)}</p>
+              <div className="text-xs text-gray-400 mb-1">총 지원금액</div>
+              <div className="text-xl font-bold text-gray-900">{formatAmount(BUDGET)}</div>
             </div>
             <div className="text-right">
-              <p className="text-xs text-gray-400 mb-1">잔여금액</p>
-              <p className={`text-xl font-bold ${isOverBudget ? "text-red-500" : "text-skku"}`}>
+              <div className="text-xs text-gray-400 mb-1">잔여금액</div>
+              <div className={`text-xl font-bold ${isOverBudget ? "text-red-500" : "text-skku"}`}>
                 {isOverBudget ? "초과 " : ""}{formatAmount(Math.abs(remaining))}
-              </p>
+              </div>
             </div>
           </div>
           <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
@@ -142,22 +136,22 @@ export default async function HomePage() {
             />
           </div>
           <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>사용 <span className="font-medium text-gray-600">{formatAmount(totalSpent)}</span></span>
-            <span>{usedPct}%</span>
+            <div>사용 <span className="font-medium text-gray-600">{formatAmount(totalSpent)}</span></div>
+            <div>{usedPct}%</div>
           </div>
         </div>
       </div>
 
       {/* 카테고리별 지출 */}
-      <div className="px-4 mt-4 flex-shrink-0">
+      <div className="px-4 mt-3 flex-shrink-0">
         <div className={cardClass}>
           <div className={cardHeader}>
-            <p className="text-sm font-semibold text-gray-700">카테고리별 지출</p>
+            <div className="text-sm font-semibold text-gray-700">카테고리별 지출</div>
           </div>
           {categoryStats.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
               <DonutChart stats={[]} total={0} />
-              <p className="text-xs text-gray-300">내역이 없습니다</p>
+              <div className="text-xs text-gray-300">내역이 없습니다</div>
             </div>
           ) : (
             <div className="flex items-center gap-4 px-4 py-4">
@@ -175,9 +169,9 @@ export default async function HomePage() {
                             className="w-2 h-2 rounded-full flex-shrink-0"
                             style={{ backgroundColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }}
                           />
-                          <span className="text-xs text-gray-600 truncate">{cat.name}</span>
+                          <div className="text-xs text-gray-600 truncate">{cat.name}</div>
                         </div>
-                        <span className="text-xs font-semibold text-gray-800 ml-1 flex-shrink-0">{pct}%</span>
+                        <div className="text-xs font-semibold text-gray-800 ml-1 flex-shrink-0">{pct}%</div>
                       </div>
                       <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
                         <div
@@ -195,14 +189,14 @@ export default async function HomePage() {
       </div>
 
       {/* 최근 내역 */}
-      <div className="flex-1 min-h-0 flex flex-col px-4 mt-4">
+      <div className="flex-1 min-h-0 flex flex-col px-4 mt-3 pb-4">
         <div className={`${cardClass} flex-1 min-h-0 flex flex-col`}>
           <div className={`${cardHeader} flex-shrink-0`}>
-            <p className="text-sm font-semibold text-gray-700">최근 내역</p>
+            <div className="text-sm font-semibold text-gray-700">최근 내역</div>
           </div>
           {recentReceipts.length === 0 ? (
             <div className="flex flex-col items-center justify-center flex-1 text-gray-300">
-              <p className="text-sm">등록된 영수증이 없습니다</p>
+              <div className="text-sm">등록된 영수증이 없습니다</div>
             </div>
           ) : (
             <ul className="overflow-y-auto divide-y divide-gray-50 pb-2">
@@ -212,13 +206,13 @@ export default async function HomePage() {
                     href={`/receipts/${receipt.id}`}
                     className="flex items-center justify-between px-4 py-3.5 active:bg-gray-50 transition-colors"
                   >
-                    <div>
-                      <p className="font-medium text-gray-900 text-sm">{receipt.store_name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{formatDate(receipt.receipt_date)}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-gray-900 text-sm truncate">{receipt.store_name}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{formatDate(receipt.receipt_date)}</div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-800 text-sm">{formatAmount(receipt.total_amount)}</span>
-                      <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 ml-3">
+                      <div className="font-semibold text-gray-800 text-sm">{formatAmount(receipt.total_amount)}</div>
+                      <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
                       </svg>
                     </div>
@@ -229,7 +223,6 @@ export default async function HomePage() {
           )}
         </div>
       </div>
-      <div className="pb-4 flex-shrink-0" />
     </div>
   );
 }
