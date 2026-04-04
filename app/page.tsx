@@ -142,12 +142,9 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* 카테고리별 지출 */}
+      {/* 카테고리별 지출 — 헤더 없이 바로 차트 */}
       <div className="px-4 mt-3 flex-shrink-0">
         <div className={cardClass}>
-          <div className={cardHeader}>
-            <div className="text-sm font-semibold text-gray-700">카테고리별 지출</div>
-          </div>
           {categoryStats.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
               <DonutChart stats={[]} total={0} />

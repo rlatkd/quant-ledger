@@ -1,6 +1,5 @@
 export default function HomeLoading() {
   const card = "bg-white rounded-2xl border border-gray-100";
-  const cardHeader = "px-4 py-3 border-b border-gray-100";
 
   return (
     <div className="h-[calc(100dvh-5rem)] flex flex-col pt-6 animate-pulse">
@@ -25,12 +24,9 @@ export default function HomeLoading() {
         </div>
       </div>
 
-      {/* 카테고리별 지출 */}
+      {/* 카테고리별 지출 (헤더 없이) */}
       <div className="px-4 mt-3 flex-shrink-0">
         <div className={card}>
-          <div className={cardHeader}>
-            <div className="h-4 w-24 bg-gray-200 rounded" />
-          </div>
           <div className="flex items-center gap-4 px-4 py-4">
             <div className="w-[176px] h-[176px] rounded-full bg-gray-100 flex-shrink-0" />
             <div className="flex-1 space-y-4">
@@ -51,7 +47,7 @@ export default function HomeLoading() {
       {/* 최근 내역 */}
       <div className="flex-1 min-h-0 flex flex-col px-4 mt-3 pb-4">
         <div className={`${card} flex-1 min-h-0 flex flex-col`}>
-          <div className={cardHeader}>
+          <div className="px-4 py-3 border-b border-gray-100">
             <div className="h-4 w-16 bg-gray-200 rounded" />
           </div>
           <div className="divide-y divide-gray-50">
