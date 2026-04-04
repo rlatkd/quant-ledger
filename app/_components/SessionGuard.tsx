@@ -66,7 +66,7 @@ export default function SessionGuard() {
 
   return (
     <>
-      <div className="fixed inset-0 z-[200] bg-black/50" />
+      <div className="fixed inset-0 z-[200] bg-white" />
       <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[210] bg-white rounded-3xl shadow-2xl overflow-hidden max-w-sm mx-auto">
         <div className="px-6 py-7 text-center">
           <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
