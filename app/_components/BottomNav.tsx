@@ -18,7 +18,7 @@ export default function BottomNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 pwa-safe-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200">
         <div className="max-w-md mx-auto flex items-center justify-around h-16 px-6">
           {/* 홈 */}
           <Link
@@ -42,7 +42,7 @@ export default function BottomNav() {
           {/* 추가 버튼 */}
           <button
             onClick={() => setSheetOpen(true)}
-            className="flex items-center justify-center w-14 h-14 rounded-full bg-skku shadow-lg -mt-6 active:scale-95 transition-transform cursor-pointer"
+            className="flex items-center justify-center w-12 h-12 rounded-full bg-skku active:scale-95 transition-transform cursor-pointer"
           >
             <svg
               className="w-7 h-7 text-white"

@@ -28,7 +28,7 @@ const getDashboardData = unstable_cache(
         .from("receipts")
         .select("id, store_name, receipt_date, total_amount")
         .order("created_at", { ascending: false })
-        .limit(10),
+        .limit(3),
     ]);
 
     const receipts = receiptsRes.data ?? [];
@@ -142,9 +142,12 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* 카테고리별 지출 — 헤더 없이 바로 차트 */}
+      {/* 카테고리별 지출 */}
       <div className="px-4 mt-3 flex-shrink-0">
         <div className={cardClass}>
+          <div className={cardHeader}>
+            <div className="text-sm font-semibold text-gray-700">카테고리별 지출</div>
+          </div>
           {categoryStats.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
               <DonutChart stats={[]} total={0} />
@@ -196,7 +199,7 @@ export default async function HomePage() {
               <div className="text-sm">등록된 영수증이 없습니다</div>
             </div>
           ) : (
-            <ul className="overflow-y-auto divide-y divide-gray-50 pb-2">
+            <ul className="divide-y divide-gray-50 pb-2">
               {recentReceipts.map((receipt) => (
                 <li key={receipt.id}>
                   <Link
