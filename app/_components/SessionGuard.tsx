@@ -35,7 +35,20 @@ export default function SessionGuard() {
     }
 
     const timer = schedule();
-    return () => { if (timer) clearTimeout(timer); };
+
+    // PWA: 앱이 백그라운드에서 돌아오면 세션 만료 처리
+    const isPWA = window.matchMedia("(display-mode: standalone)").matches;
+    function handleVisibility() {
+      if (document.visibilityState === "hidden" && isPWA) {
+        setExpired(true);
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [pathname]);
 
   if (!expired) return null;
