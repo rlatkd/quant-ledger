@@ -7,9 +7,13 @@ const SESSION_DURATION = 30 * 60 * 1000;
 
 export function proxy(request: NextRequest) {
   const cookieValue = request.cookies.get(SESSION_COOKIE)?.value;
+  const expCookie = request.cookies.get(SESSION_EXP_COOKIE)?.value;
 
-  if (!cookieValue) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (!cookieValue || !expCookie) {
+    const res = NextResponse.redirect(new URL("/login", request.url));
+    res.cookies.delete(SESSION_COOKIE);
+    res.cookies.delete(SESSION_EXP_COOKIE);
+    return res;
   }
 
   try {

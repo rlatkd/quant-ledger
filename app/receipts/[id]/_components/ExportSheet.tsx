@@ -112,8 +112,25 @@ export default function ExportSheet({ receipt }: Props) {
   const [info, setInfo] = useState<ExportInfo>({ name: "", studentId: "", cardNumber: "", reason: "" });
   const [signature, setSignature] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const items = receipt.receipt_items ?? [];
+
+  useEffect(() => {
+    if (!open || loaded) return;
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((user: { student_id?: string; name?: string; card_number?: string }) => {
+        setInfo((prev) => ({
+          ...prev,
+          name: user.name ?? prev.name,
+          studentId: user.student_id ?? prev.studentId,
+          cardNumber: user.card_number ?? prev.cardNumber,
+        }));
+        setLoaded(true);
+      })
+      .catch(() => {});
+  }, [open, loaded]);
 
   function handleClose() {
     setOpen(false);
@@ -284,7 +301,15 @@ export default function ExportSheet({ receipt }: Props) {
           <div className="flex-shrink-0 px-5 pb-8 pt-3 print:hidden">
             {step === "form" ? (
               <button
-                onClick={() => setStep("preview")}
+                onClick={() => {
+                  // 이름/카드번호 변경 시 DB에 저장
+                  fetch("/api/auth/me", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: info.name, card_number: info.cardNumber }),
+                  }).catch(() => {});
+                  setStep("preview");
+                }}
                 disabled={!canProceed}
                 className="w-full py-4 bg-skku text-white font-semibold rounded-2xl disabled:opacity-40 active:scale-95 transition-transform"
               >

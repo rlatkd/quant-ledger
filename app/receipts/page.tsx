@@ -12,8 +12,8 @@ async function getCategories(): Promise<Category[]> {
 async function getReceiptsUncached(categoryId?: string): Promise<Receipt[]> {
   let query = supabase
     .from("receipts")
-    .select("id, store_name, receipt_date, total_amount")
-    .order("receipt_date", { ascending: false });
+    .select("id, store_name, receipt_date, total_amount, created_at")
+    .order("created_at", { ascending: false });
 
   if (categoryId) {
     query = query.eq("category_id", categoryId);

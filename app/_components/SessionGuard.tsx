@@ -36,11 +36,15 @@ export default function SessionGuard() {
 
     const timer = schedule();
 
-    // PWA: 앱이 백그라운드에서 돌아오면 세션 만료 처리
+    // PWA: 앱이 백그라운드로 가면 세션 쿠키 삭제, 돌아오면 로그인으로 이동
     const isPWA = window.matchMedia("(display-mode: standalone)").matches;
     function handleVisibility() {
-      if (document.visibilityState === "hidden" && isPWA) {
-        setExpired(true);
+      if (!isPWA) return;
+      if (document.visibilityState === "hidden") {
+        document.cookie = "ql_session=; path=/; max-age=0";
+        document.cookie = "ql_session_exp=; path=/; max-age=0";
+      } else if (document.visibilityState === "visible") {
+        window.location.href = "/login";
       }
     }
     document.addEventListener("visibilitychange", handleVisibility);
