@@ -3,8 +3,6 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const STUDENT_ID_REGEX = /^20267121\d{2}$/;
-
 export default function LoginPage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -14,14 +12,8 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
+    if (!studentId.trim()) return;
     setError(null);
-
-    if (!STUDENT_ID_REGEX.test(studentId)) {
-      setError("권한이 없습니다.");
-      inputRef.current?.focus();
-      return;
-    }
-
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -33,6 +25,7 @@ export default function LoginPage() {
         const data = await res.json();
         setError(data.error ?? "로그인에 실패했습니다.");
         setLoading(false);
+        inputRef.current?.focus();
         return;
       }
       router.replace("/");
@@ -65,8 +58,8 @@ export default function LoginPage() {
               ref={inputRef}
               type="text"
               inputMode="numeric"
+              placeholder="학번 (10자리)"
               maxLength={10}
-              placeholder="2026000000"
               value={studentId}
               onChange={(e) => {
                 setStudentId(e.target.value.replace(/\D/g, ""));
