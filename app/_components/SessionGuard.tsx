@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
+const SESSION_ALIVE_KEY = "ql_alive";
+
 function getSessionExpiry(): number | null {
   const match = document.cookie
     .split("; ")
@@ -12,6 +14,11 @@ function getSessionExpiry(): number | null {
   return isNaN(val) ? null : val;
 }
 
+function clearSession() {
+  document.cookie = "ql_session=; path=/; max-age=0";
+  document.cookie = "ql_session_exp=; path=/; max-age=0";
+}
+
 export default function SessionGuard() {
   const pathname = usePathname();
   const [expired, setExpired] = useState(false);
@@ -19,6 +26,24 @@ export default function SessionGuard() {
   useEffect(() => {
     if (pathname === "/login") return;
 
+    // PWA 완전 종료 감지:
+    // sessionStorage는 탭/앱이 완전히 닫힐 때만 초기화됨.
+    // 백그라운드로 갔다 오는 건 유지되므로, 재시작(신규 세션)만 감지 가능.
+    const isPWA = window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+    if (isPWA) {
+      const alive = sessionStorage.getItem(SESSION_ALIVE_KEY);
+      if (!alive) {
+        // 앱 최초 시작 or 완전 종료 후 재시작 → 세션 무효화
+        clearSession();
+        sessionStorage.setItem(SESSION_ALIVE_KEY, "1");
+        setExpired(true);
+        return;
+      }
+    }
+
+    // 세션 만료 타이머
     function schedule() {
       const exp = getSessionExpiry();
       if (!exp) {
@@ -30,39 +55,18 @@ export default function SessionGuard() {
         setExpired(true);
         return;
       }
-      const timer = setTimeout(() => setExpired(true), msLeft);
-      return timer;
+      return setTimeout(() => setExpired(true), msLeft);
     }
 
     const timer = schedule();
-
-    // PWA: 앱이 백그라운드로 가면 세션 쿠키 삭제, 돌아오면 로그인으로 이동
-    const isPWA = window.matchMedia("(display-mode: standalone)").matches;
-    function handleVisibility() {
-      if (!isPWA) return;
-      if (document.visibilityState === "hidden") {
-        document.cookie = "ql_session=; path=/; max-age=0";
-        document.cookie = "ql_session_exp=; path=/; max-age=0";
-      } else if (document.visibilityState === "visible") {
-        window.location.href = "/login";
-      }
-    }
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      if (timer) clearTimeout(timer);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
+    return () => { if (timer) clearTimeout(timer); };
   }, [pathname]);
 
   if (!expired) return null;
 
   return (
     <>
-      {/* Dim overlay — 뒤 화면 차단 */}
       <div className="fixed inset-0 z-[200] bg-black/50" />
-
-      {/* 만료 모달 */}
       <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[210] bg-white rounded-3xl shadow-2xl overflow-hidden max-w-sm mx-auto">
         <div className="px-6 py-7 text-center">
           <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">

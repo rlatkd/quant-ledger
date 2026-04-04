@@ -15,6 +15,11 @@ function formatDate(dateStr: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}.`;
 }
 
+function formatDateDoc(dateStr: string) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()} . ${String(d.getMonth() + 1).padStart(2, "0")} . ${String(d.getDate()).padStart(2, "0")} .`;
+}
+
 function formatAmount(n: number) {
   return n.toLocaleString("ko-KR");
 }
@@ -28,15 +33,9 @@ function SignaturePad({ onChange }: { onChange: (dataUrl: string) => void }) {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     if ("touches" in e) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY,
-      };
+      return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
     }
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
-    };
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   }
 
   function start(e: React.MouseEvent | React.TouchEvent) {
@@ -83,9 +82,7 @@ function SignaturePad({ onChange }: { onChange: (dataUrl: string) => void }) {
     <div>
       <div className="flex items-center justify-between mb-1.5">
         <label className="text-xs font-medium text-gray-500">서명</label>
-        <button type="button" onClick={clear} className="text-xs text-gray-400">
-          지우기
-        </button>
+        <button type="button" onClick={clear} className="text-xs text-gray-400">지우기</button>
       </div>
       <canvas
         ref={canvasRef}
@@ -150,10 +147,6 @@ export default function ExportSheet({ receipt }: Props) {
   function handleClose() {
     setOpen(false);
     setStep("form");
-  }
-
-  function handlePdfDownload() {
-    window.print();
   }
 
   const canProceed = info.name && info.studentId && info.cardNumber && info.reason;
@@ -228,84 +221,78 @@ export default function ExportSheet({ receipt }: Props) {
 
           {/* ── STEP 2: 미리보기 ── */}
           {step === "preview" && (
-            <div className="flex-1 overflow-y-auto px-4 pb-4 print:overflow-visible print:p-0">
-              <div
-                className="bg-white border border-gray-200 rounded-2xl text-[11px] leading-relaxed
-                  print:border-none print:rounded-none print:shadow-none print:text-sm print:leading-normal"
-                style={{ padding: "24px" }}
-                id="print-area"
-              >
-                {/* 이름 학번 */}
-                <p className="text-right mb-6 print:mb-8">{info.name} {info.studentId}</p>
+            <div className="flex-1 overflow-y-auto print:overflow-visible">
+              {/* 문서 본체 — 모바일은 scale로 축소해서 A4 비율 유지 */}
+              <div className="doc-wrapper">
+                <div id="print-area" className="doc-body">
 
-                {/* 제목 */}
-                <h1 className="text-center text-xl font-bold tracking-widest mb-8 print:text-3xl print:mb-10">
-                  개인카드&nbsp;&nbsp;사용&nbsp;&nbsp;사유서
-                </h1>
+                  {/* 이름 학번 */}
+                  <p className="doc-name">{info.name} {info.studentId}</p>
 
-                {/* 섹션1 */}
-                <p className="font-bold mb-1.5 print:mb-2">□&nbsp;&nbsp;개인카드 사용 내역</p>
-                <table className="w-full border-collapse mb-5 text-center print:mb-6">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="border border-gray-500 px-1 py-1.5 w-8">연번</th>
-                      <th className="border border-gray-500 px-1 py-1.5 w-20">카드사용일</th>
-                      <th className="border border-gray-500 px-1 py-1.5 w-16">금액</th>
-                      <th className="border border-gray-500 px-1 py-1.5">카드번호</th>
-                      <th className="border border-gray-500 px-1 py-1.5 w-20">사용처</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="border border-gray-500 px-1 py-1.5">1</td>
-                      <td className="border border-gray-500 px-1 py-1.5">{formatDate(receipt.receipt_date)}</td>
-                      <td className="border border-gray-500 px-1 py-1.5">{formatAmount(receipt.total_amount)}</td>
-                      <td className="border border-gray-500 px-1 py-1.5">{info.cardNumber}</td>
-                      <td className="border border-gray-500 px-1 py-1.5 text-left px-2">{receipt.store_name}</td>
-                    </tr>
-                    <tr><td className="border border-gray-500 py-3" colSpan={5} /></tr>
-                    <tr>
-                      <td className="border border-gray-500 px-1 py-1.5 font-bold" colSpan={2}>합계</td>
-                      <td className="border border-gray-500 px-1 py-1.5 font-bold">{formatAmount(receipt.total_amount)}</td>
-                      <td className="border border-gray-500 py-1.5" colSpan={2} />
-                    </tr>
-                  </tbody>
-                </table>
+                  {/* 제목 */}
+                  <h1 className="doc-title">개인카드&nbsp;&nbsp;사용&nbsp;&nbsp;사유서</h1>
 
-                {/* 섹션2 */}
-                <p className="font-bold mb-1.5 print:mb-2">□&nbsp;&nbsp;개인카드 사용 사유</p>
-                <div className="border border-gray-500 px-3 py-3 mb-5 min-h-[60px] print:min-h-[80px] print:mb-6">
-                  {info.reason}
-                </div>
+                  {/* 섹션1 */}
+                  <p className="doc-section-header">□&nbsp;&nbsp;개인카드 사용 내역</p>
+                  <table className="doc-table">
+                    <thead>
+                      <tr>
+                        <th className="doc-th w-[7%]">연번</th>
+                        <th className="doc-th w-[15%]">카드사용일</th>
+                        <th className="doc-th w-[13%]">금액</th>
+                        <th className="doc-th w-[40%]">카드번호</th>
+                        <th className="doc-th">사용처</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="doc-td text-center">1</td>
+                        <td className="doc-td text-center">{formatDate(receipt.receipt_date)}</td>
+                        <td className="doc-td text-center">{formatAmount(receipt.total_amount)}</td>
+                        <td className="doc-td text-center">{info.cardNumber}</td>
+                        <td className="doc-td text-left">{receipt.store_name}</td>
+                      </tr>
+                      {/* 빈 행 */}
+                      <tr>
+                        <td className="doc-td h-8" colSpan={5} />
+                      </tr>
+                      {/* 합계 */}
+                      <tr>
+                        <td className="doc-td text-center font-bold" colSpan={2}>합계</td>
+                        <td className="doc-td" />
+                        <td className="doc-td" colSpan={2} />
+                      </tr>
+                    </tbody>
+                  </table>
 
-                {/* 섹션3 */}
-                <p className="font-bold mb-1.5 print:mb-2">□&nbsp;&nbsp;사용상세내역&nbsp;&nbsp;(사용처가 식사/음주 관련 업종일 경우 작성)</p>
-                <div className="border border-gray-500 px-3 py-3 mb-8 min-h-[60px] print:min-h-[80px] print:mb-12">
-                  <DetailLines storeName={receipt.store_name} items={items} />
-                </div>
+                  {/* 섹션2 */}
+                  <p className="doc-section-header">□&nbsp;&nbsp;개인카드 사용 사유</p>
+                  <div className="doc-box" style={{ minHeight: "72px" }}>
+                    <p>{info.reason}</p>
+                  </div>
 
-                {/* 날짜 */}
-                <p className="text-center mb-8 print:mb-12">
-                  {formatDate(receipt.receipt_date).replace(/\./g, " . ").replace(/ \. $/, "")}
-                </p>
+                  {/* 섹션3 */}
+                  <p className="doc-section-header">□&nbsp;&nbsp;사용상세내역&nbsp;&nbsp;(사용처가 식사/음주 관련 업종일 경우 작성)</p>
+                  <div className="doc-box" style={{ minHeight: "72px" }}>
+                    <DetailLines storeName={receipt.store_name} items={items} />
+                  </div>
 
-                {/* 서명 */}
-                <div className="flex justify-center">
-                  <div className="flex items-end gap-3">
-                    <span className="font-bold text-sm print:text-base">사용자 :</span>
-                    <span className="border-b border-gray-500 w-24 text-center pb-0.5 print:w-32">{info.name}</span>
-                    <div className="relative w-10 h-10 flex items-center justify-center print:w-14 print:h-14">
-                      <span className="text-gray-500 text-sm select-none">(인)</span>
+                  {/* 날짜 */}
+                  <p className="doc-date">{formatDateDoc(receipt.receipt_date)}</p>
+
+                  {/* 서명 */}
+                  <div className="doc-sign-row">
+                    <span className="doc-sign-label">사용자 :</span>
+                    <span className="doc-sign-name">{info.name}</span>
+                    <div className="doc-sign-ink">
+                      <span className="doc-sign-in">(인)</span>
                       {signature && (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={signature}
-                          alt="서명"
-                          className="absolute inset-0 w-full h-full object-contain"
-                        />
+                        <img src={signature} alt="서명" className="absolute inset-0 w-full h-full object-contain" />
                       )}
                     </div>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -330,7 +317,7 @@ export default function ExportSheet({ receipt }: Props) {
               </button>
             ) : (
               <button
-                onClick={handlePdfDownload}
+                onClick={() => window.print()}
                 className="w-full py-4 bg-skku text-white font-semibold rounded-2xl active:scale-95 transition-transform"
               >
                 PDF 저장
@@ -341,12 +328,143 @@ export default function ExportSheet({ receipt }: Props) {
       )}
 
       <style>{`
+        /* ── 문서 공통 스타일 ── */
+        .doc-body {
+          font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+          background: #fff;
+          color: #000;
+        }
+        .doc-name {
+          text-align: right;
+          font-size: 10pt;
+          margin-bottom: 28px;
+        }
+        .doc-title {
+          text-align: center;
+          font-size: 26pt;
+          font-weight: bold;
+          letter-spacing: 0.15em;
+          margin-bottom: 36px;
+        }
+        .doc-section-header {
+          font-size: 11pt;
+          font-weight: bold;
+          margin-bottom: 6px;
+        }
+        .doc-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 28px;
+        }
+        .doc-th {
+          border: 1px solid #555;
+          padding: 6px 4px;
+          text-align: center;
+          background: #e8e8e8;
+          font-size: 10pt;
+          font-weight: bold;
+        }
+        .doc-td {
+          border: 1px solid #555;
+          padding: 6px 4px;
+          font-size: 10pt;
+        }
+        .doc-box {
+          border: 1px solid #555;
+          padding: 14px 12px;
+          margin-bottom: 28px;
+          font-size: 10pt;
+          line-height: 1.7;
+        }
+        .doc-date {
+          text-align: center;
+          font-size: 11pt;
+          margin-bottom: 40px;
+          margin-top: 8px;
+        }
+        .doc-sign-row {
+          display: flex;
+          justify-content: center;
+          align-items: flex-end;
+          gap: 8px;
+        }
+        .doc-sign-label {
+          font-size: 13pt;
+          font-weight: bold;
+          white-space: nowrap;
+        }
+        .doc-sign-name {
+          font-size: 13pt;
+          border-bottom: 1px solid #555;
+          min-width: 80px;
+          text-align: center;
+          padding-bottom: 2px;
+        }
+        .doc-sign-ink {
+          position: relative;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .doc-sign-in {
+          font-size: 11pt;
+          color: #555;
+          user-select: none;
+        }
+
+        /* ── 모바일 미리보기: A4 비율로 축소 표시 ── */
+        .doc-wrapper {
+          width: 100%;
+          overflow-x: auto;
+          padding: 12px;
+          box-sizing: border-box;
+        }
+        .doc-body {
+          width: 595px;          /* A4 72dpi 기준 */
+          min-height: 842px;
+          padding: 60px 56px;
+          box-sizing: border-box;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          transform-origin: top left;
+          transform: scale(var(--doc-scale, 0.55));
+          margin-bottom: calc((842px * var(--doc-scale, 0.55)) - 842px);
+        }
+
+        /* ── 인쇄 ── */
         @media print {
+          @page { size: A4; margin: 20mm 18mm; }
           body > * { display: none !important; }
           .fixed.inset-0.z-50 { display: block !important; position: static !important; }
-          #print-area { padding: 40px !important; }
+          .doc-wrapper { padding: 0; overflow: visible; }
+          .doc-body {
+            width: 100%;
+            min-height: unset;
+            padding: 0;
+            border: none;
+            border-radius: 0;
+            transform: none;
+            margin-bottom: 0;
+          }
         }
       `}</style>
+
+      {/* 동적으로 뷰포트에 맞는 scale 계산 */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function() {
+          function setDocScale() {
+            var vw = window.innerWidth;
+            var docW = 595;
+            var padding = 24;
+            var scale = Math.min(1, (vw - padding) / docW);
+            document.documentElement.style.setProperty('--doc-scale', scale);
+          }
+          setDocScale();
+          window.addEventListener('resize', setDocScale);
+        })();
+      `}} />
     </>
   );
 }
