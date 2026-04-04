@@ -28,7 +28,7 @@ function getReceipts(categoryId?: string) {
   return unstable_cache(
     () => getReceiptsUncached(categoryId),
     ["receipts", categoryId ?? "all"],
-    { revalidate: 30 }
+    { revalidate: false }
   )();
 }
 

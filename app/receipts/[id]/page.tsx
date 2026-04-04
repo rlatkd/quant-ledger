@@ -19,7 +19,7 @@ function getReceipt(id: string) {
       return (data as Receipt) ?? null;
     },
     ["receipt", id],
-    { revalidate: 30 }
+    { revalidate: false }
   )();
 }
 
