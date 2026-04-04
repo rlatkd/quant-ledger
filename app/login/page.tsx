@@ -43,9 +43,9 @@ export default function LoginPage() {
         <Image
           src="/icon-192.png"
           alt="성균관대학교"
-          width={96}
-          height={96}
-          className="mx-auto mb-4"
+          width={140}
+          height={140}
+          className="mx-auto mb-4" style={{ mixBlendMode: "multiply" }}
           priority
         />
         <p className="text-xl text-gray-400 font-medium mb-1">Quant Ledger</p>
@@ -62,7 +62,7 @@ export default function LoginPage() {
               ref={inputRef}
               type="text"
               inputMode="numeric"
-              placeholder="학번 (10자리)"
+              placeholder="2026000000"
               maxLength={10}
               value={studentId}
               onChange={(e) => {
