@@ -116,7 +116,7 @@ export default async function HomePage() {
     <div className="h-[calc(100dvh-5rem)] flex flex-col pt-6">
       {/* 예산 카드 */}
       <div className="px-4 flex-shrink-0">
-        <div className={`${cardClass} shadow-sm px-5 py-5`}>
+        <div className={`${cardClass} px-5 py-5`}>
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="text-xs text-gray-400 mb-1">총 지원금액</div>
@@ -154,7 +154,7 @@ export default async function HomePage() {
               <div className="text-xs text-gray-300">내역이 없습니다</div>
             </div>
           ) : (
-            <div className="flex items-center gap-4 px-4 py-4">
+            <div className="flex items-center gap-4 px-4 py-2">
               <div className="flex-shrink-0">
                 <DonutChart stats={categoryStats} total={totalSpent} />
               </div>
@@ -199,7 +199,7 @@ export default async function HomePage() {
               <div className="text-sm">등록된 영수증이 없습니다</div>
             </div>
           ) : (
-            <ul className="divide-y divide-gray-50 pb-2">
+            <ul className="divide-y divide-gray-50">
               {recentReceipts.map((receipt) => (
                 <li key={receipt.id}>
                   <Link

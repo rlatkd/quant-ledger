@@ -19,7 +19,7 @@ export default function BottomNav() {
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200">
-        <div className="max-w-md mx-auto flex items-center justify-around h-16 px-6">
+        <div className="max-w-md mx-auto flex items-center justify-around h-20 px-6">
           {/* 홈 */}
           <Link
             href="/"
