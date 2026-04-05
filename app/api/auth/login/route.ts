@@ -62,11 +62,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "이름 형식이 올바르지 않습니다." }, { status: 400 });
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from("users")
     .select("id, role, name")
     .eq("student_id", studentId)
     .maybeSingle();
+
+  if (selectError) {
+    console.error("[login] select error:", selectError);
+    return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
+  }
 
   let userId: string;
   let role: string;
