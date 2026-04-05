@@ -90,7 +90,7 @@ export default function CategoryPage() {
 
       sessionStorage.removeItem("upload_image");
       sessionStorage.removeItem("upload_parsed");
-      router.push("/receipts");
+      router.push("/");
       router.refresh();
     } catch {
       setError("저장에 실패했습니다. 다시 시도해주세요.");
