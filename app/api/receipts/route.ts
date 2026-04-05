@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabase } from "../../_lib/supabase";
+import { getSession } from "../../_lib/auth";
 
 export async function GET() {
   const { data, error } = await supabase
@@ -13,6 +14,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getSession();
   const body = await req.json();
   const { store_name, receipt_date, total_amount, raw_text, image_url, category_id, items } = body;
 
@@ -24,6 +26,7 @@ export async function POST(req: NextRequest) {
     p_image_url: image_url ?? null,
     p_category_id: category_id ?? null,
     p_items: items ?? [],
+    p_user_id: session?.userId ?? null,
   });
 
   if (error) return Response.json({ error: error.message }, { status: 500 });

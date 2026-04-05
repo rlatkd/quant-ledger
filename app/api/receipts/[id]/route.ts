@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabase } from "../../../_lib/supabase";
+import { isAdmin } from "../../../_lib/auth";
 
 export async function GET(_req: NextRequest, ctx: RouteContext<"/api/receipts/[id]">) {
   const { id } = await ctx.params;
@@ -16,6 +17,8 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/receipts/[i
 }
 
 export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/receipts/[id]">) {
+  if (!await isAdmin()) return Response.json({ error: "권한이 없습니다." }, { status: 403 });
+
   const { id } = await ctx.params;
   const body = await req.json();
   const { store_name, receipt_date, total_amount, raw_text, items } = body;
@@ -38,6 +41,8 @@ export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/receipts/[
 }
 
 export async function DELETE(_req: NextRequest, ctx: RouteContext<"/api/receipts/[id]">) {
+  if (!await isAdmin()) return Response.json({ error: "권한이 없습니다." }, { status: 403 });
+
   const { id } = await ctx.params;
 
   // receipt_items는 ON DELETE CASCADE로 자동 삭제

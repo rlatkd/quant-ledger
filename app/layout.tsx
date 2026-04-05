@@ -4,6 +4,7 @@ import "./globals.css";
 import BottomNav from "./_components/BottomNav";
 import SessionGuard from "./_components/SessionGuard";
 import PwaGuard from "./_components/PwaGuard";
+import NavigationLoader from "./_components/NavigationLoader";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +48,7 @@ export default function RootLayout({
         <BottomNav />
         <SessionGuard />
         <PwaGuard />
+        <NavigationLoader />
       </body>
     </html>
   );

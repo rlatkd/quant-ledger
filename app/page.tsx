@@ -2,6 +2,8 @@ import Link from "next/link";
 import { unstable_cache } from "next/cache";
 import { supabase } from "./_lib/supabase";
 import type { Receipt } from "./_lib/types";
+import { isAdmin } from "./_lib/auth";
+import RoleInfoModal from "./_components/RoleInfoModal";
 
 const BUDGET = 3_600_000;
 
@@ -103,7 +105,10 @@ function DonutChart({ stats, total }: { stats: CategoryStat[]; total: number }) 
 }
 
 export default async function HomePage() {
-  const { totalSpent, categoryStats, recentReceipts } = await getDashboardData();
+  const [{ totalSpent, categoryStats, recentReceipts }, admin] = await Promise.all([
+    getDashboardData(),
+    isAdmin(),
+  ]);
 
   const remaining = BUDGET - totalSpent;
   const usedPct = Math.min(100, Math.round((totalSpent / BUDGET) * 100));
@@ -114,6 +119,7 @@ export default async function HomePage() {
 
   return (
     <div className="h-[calc(100dvh-5rem)] flex flex-col pt-6">
+      {!admin && <RoleInfoModal />}
       {/* 예산 카드 */}
       <div className="px-4 flex-shrink-0">
         <div className={`${cardClass} px-5 py-5`}>

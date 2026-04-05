@@ -5,6 +5,7 @@ import { supabase } from "../../_lib/supabase";
 import type { Receipt } from "../../_lib/types";
 import DeleteButton from "./_components/DeleteButton";
 import ReceiptActions from "./_components/ReceiptActions";
+import { isAdmin } from "../../_lib/auth";
 
 function getReceipt(id: string) {
   return unstable_cache(
@@ -34,7 +35,7 @@ function formatDate(dateStr: string): string {
 
 export default async function ReceiptDetailPage(props: PageProps<"/receipts/[id]">) {
   const { id } = await props.params;
-  const receipt = await getReceipt(id);
+  const [receipt, admin] = await Promise.all([getReceipt(id), isAdmin()]);
 
   if (!receipt) notFound();
 
@@ -53,15 +54,17 @@ export default async function ReceiptDetailPage(props: PageProps<"/receipts/[id]
           </svg>
         </Link>
         <h1 className="text-xl font-bold text-gray-900 flex-1 truncate">{receipt.store_name}</h1>
-        <Link
-          href={`/receipts/${id}/edit`}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-colors"
-        >
-          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
-          </svg>
-        </Link>
-        <DeleteButton id={id} />
+        {admin && (
+          <Link
+            href={`/receipts/${id}/edit`}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 active:bg-gray-200 transition-colors"
+          >
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+            </svg>
+          </Link>
+        )}
+        {admin && <DeleteButton id={id} />}
       </header>
 
       {/* 고정: 기본 정보 */}

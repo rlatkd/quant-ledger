@@ -6,35 +6,43 @@ import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const studentIdRef = useRef<HTMLInputElement>(null);
   const [studentId, setStudentId] = useState("");
+  const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const isValid = studentId.length === 10 && name.trim().length >= 2;
+
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
-    if (!studentId.trim()) return;
+    if (!isValid) return;
     setError(null);
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentId }),
+        body: JSON.stringify({ studentId, name: name.trim() }),
       });
       if (!res.ok) {
         const data = await res.json();
         setError(data.error ?? "로그인에 실패했습니다.");
         setLoading(false);
-        inputRef.current?.focus();
+        studentIdRef.current?.focus();
         return;
       }
+      sessionStorage.setItem("ql_alive", "1");
       router.replace("/");
     } catch {
       setError("네트워크 오류가 발생했습니다.");
       setLoading(false);
     }
   }
+
+  const inputClass = (hasError: boolean) =>
+    `w-full border rounded-2xl px-4 py-3.5 text-sm outline-none transition-colors
+    ${hasError ? "border-red-300 bg-red-50" : "border-gray-200 focus:border-skku bg-white"}`;
 
   return (
     <div className="h-[100dvh] flex flex-col items-center justify-center px-6 bg-gray-50">
@@ -45,7 +53,8 @@ export default function LoginPage() {
           alt="성균관대학교"
           width={140}
           height={140}
-          className="mx-auto mb-4" style={{ mixBlendMode: "multiply" }}
+          className="mx-auto mb-4"
+          style={{ mixBlendMode: "multiply" }}
           priority
         />
         <p className="text-xl text-gray-400 font-medium mb-1">Quant Ledger</p>
@@ -54,33 +63,38 @@ export default function LoginPage() {
       {/* 로그인 카드 */}
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
         <h2 className="text-base font-bold text-gray-900 mb-1">로그인</h2>
-        <p className="text-sm text-gray-400 mb-5">학번을 입력하세요</p>
+        <p className="text-sm text-gray-400 mb-5">이름과 학번을 입력하세요</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              ref={inputRef}
-              type="text"
-              inputMode="numeric"
-              placeholder="2026000000"
-              maxLength={10}
-              value={studentId}
-              onChange={(e) => {
-                setStudentId(e.target.value.replace(/\D/g, ""));
-                setError(null);
-              }}
-              className={`w-full border rounded-2xl px-4 py-3.5 text-sm outline-none transition-colors
-                ${error ? "border-red-300 bg-red-50" : "border-gray-200 focus:border-skku bg-white"}`}
-            />
-            {error && (
-              <p className="mt-2 text-xs text-red-500">{error}</p>
-            )}
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="text"
+            placeholder="이름"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setError(null);
+            }}
+            className={inputClass(!!error)}
+          />
+          <input
+            ref={studentIdRef}
+            type="text"
+            inputMode="numeric"
+            placeholder="2026000000"
+            maxLength={10}
+            value={studentId}
+            onChange={(e) => {
+              setStudentId(e.target.value.replace(/\D/g, ""));
+              setError(null);
+            }}
+            className={inputClass(!!error)}
+          />
+          {error && <p className="text-xs text-red-500">{error}</p>}
 
           <button
             type="submit"
-            disabled={loading || studentId.length !== 10}
-            className="w-full py-4 bg-skku text-white font-semibold rounded-2xl text-sm active:scale-95 transition-transform disabled:opacity-50"
+            disabled={loading || !isValid}
+            className="w-full py-4 bg-skku text-white font-semibold rounded-2xl text-sm active:scale-95 transition-transform disabled:opacity-50 !mt-4"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">

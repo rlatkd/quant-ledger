@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 function isPwa(): boolean {
   if (typeof window === "undefined") return true;
@@ -97,14 +98,14 @@ function OtherGuide() {
   return (
     <div className="w-full max-w-xs bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100 text-left text-sm">
       <div className="flex items-start gap-3 px-4 py-3.5">
-        <span className="text-lg mt-0.5">🍎</span>
+        <Image src="/apple.svg" alt="Apple" width={20} height={20} className="mt-0.5 flex-shrink-0" unoptimized />
         <div>
           <p className="font-semibold text-gray-800">iPhone / iPad</p>
           <p className="text-gray-400 text-xs mt-0.5">Safari → 공유 버튼 → 홈 화면에 추가</p>
         </div>
       </div>
       <div className="flex items-start gap-3 px-4 py-3.5">
-        <span className="text-lg mt-0.5">🤖</span>
+        <Image src="/android.svg" alt="Android" width={20} height={20} className="mt-0.5 flex-shrink-0" unoptimized />
         <div>
           <p className="font-semibold text-gray-800">Android</p>
           <p className="text-gray-400 text-xs mt-0.5">Chrome → 메뉴(⋮) → 앱 설치 또는 홈 화면에 추가</p>
@@ -114,7 +115,7 @@ function OtherGuide() {
         <span className="text-lg mt-0.5">💻</span>
         <div>
           <p className="font-semibold text-gray-800">PC</p>
-          <p className="text-gray-400 text-xs mt-0.5">Chrome 주소창 오른쪽 설치 아이콘 클릭</p>
+          <p className="text-gray-400 text-xs mt-0.5">Chrome 주소창 오른쪽 앱에서 열기 클릭</p>
         </div>
       </div>
     </div>
@@ -126,6 +127,7 @@ export default function PwaGuard() {
   const [os, setOs] = useState<"ios" | "android" | "other">("other");
 
   useEffect(() => {
+    // if (process.env.NODE_ENV === "development") return;
     if (!isPwa()) {
       setOs(detectOS());
       setBlocked(true);
@@ -143,12 +145,17 @@ export default function PwaGuard() {
 
   return (
     <div className="fixed inset-0 z-[999] bg-gray-50 flex flex-col items-center justify-center px-6 text-center overflow-y-auto py-10">
-      <div className="w-20 h-20 rounded-3xl bg-skku flex items-center justify-center mb-5 shadow-lg flex-shrink-0">
-        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3m-3 3.75h3M9.75 17.25h4.5" />
-        </svg>
-      </div>
+      <Image
+        src="/icon-192.png"
+        alt="성균관대학교"
+        width={140}
+        height={140}
+        className="mb-5 flex-shrink-0"
+        style={{ mixBlendMode: "multiply" }}
+        priority
+      />
 
+      <p className="text-xl text-gray-400 font-medium mb-10">Quant Ledger</p>
       <h1 className="text-xl font-bold text-gray-900 mb-1.5">앱으로 실행해주세요</h1>
       <p className="text-sm text-gray-500 leading-relaxed mb-6">{subtitle}</p>
 

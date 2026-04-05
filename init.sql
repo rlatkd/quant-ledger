@@ -21,7 +21,7 @@ create table receipts (
   total_amount integer not null,
   raw_text text,
   category_id uuid references categories(id) on delete set null,
-  created_by uuid references users(id) on delete set null,
+  user_id uuid references users(id) on delete set null,
   created_at timestamptz default now()
 );
 
@@ -34,6 +34,12 @@ create table receipt_items (
   total_price integer not null
 );
 
+-- RLS 활성화 (service role key로 우회, anon key 직접 쿼리 차단)
+alter table users enable row level security;
+alter table categories enable row level security;
+alter table receipts enable row level security;
+alter table receipt_items enable row level security;
+
 -- 트랜잭션 함수: 영수증 + 항목 원자적 등록
 create or replace function insert_receipt(
   p_store_name text,
@@ -42,13 +48,14 @@ create or replace function insert_receipt(
   p_raw_text text default '',
   p_image_url text default null,
   p_category_id uuid default null,
-  p_items jsonb default '[]'::jsonb
+  p_items jsonb default '[]'::jsonb,
+  p_user_id uuid default null
 ) returns uuid language plpgsql as $$
 declare
   v_id uuid;
 begin
-  insert into receipts (store_name, receipt_date, total_amount, raw_text, image_url, category_id)
-  values (p_store_name, p_receipt_date, p_total_amount, p_raw_text, p_image_url, p_category_id)
+  insert into receipts (store_name, receipt_date, total_amount, raw_text, image_url, category_id, user_id)
+  values (p_store_name, p_receipt_date, p_total_amount, p_raw_text, p_image_url, p_category_id, p_user_id)
   returning id into v_id;
 
   insert into receipt_items (receipt_id, menu_name, quantity, unit_price, total_price)
@@ -92,4 +99,5 @@ $$;
 create index idx_receipts_date on receipts (receipt_date desc);
 create index idx_receipts_created_at on receipts (created_at desc);
 create index idx_receipts_category on receipts (category_id);
+create index idx_receipts_user on receipts (user_id);
 create index idx_receipt_items_receipt on receipt_items (receipt_id);
