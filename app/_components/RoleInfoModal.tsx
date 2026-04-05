@@ -32,7 +32,7 @@ export default function RoleInfoModal() {
           </div>
           <h2 className="text-base font-bold text-gray-900 mb-2">읽기 · 쓰기 전용 계정</h2>
           <p className="text-sm text-gray-400 leading-relaxed mb-6">
-            영수증 조회 및 등록은 가능하지만,<br />수정과 삭제는 관리자만 이용할 수 있습니다.
+            4월 12일부터<br />영수증 조회 및 등록은 가능하지만,<br />수정과 삭제는 관리자만 이용할 수 있습니다.
           </p>
           <button
             onClick={handleConfirm}

@@ -25,11 +25,11 @@ export async function proxy(request: NextRequest) {
     return redirectToLogin(request);
   }
 
-  // admin 전용 경로 체크
-  const { pathname } = new URL(request.url);
-  if (pathname.endsWith("/edit") && session.role !== "admin") {
-    return NextResponse.redirect(new URL("/receipts", request.url));
-  }
+  // [시연] 권한 제한 해제 — 원복 시 아래 주석 해제
+  // const { pathname } = new URL(request.url);
+  // if (pathname.endsWith("/edit") && session.role !== "admin") {
+  //   return NextResponse.redirect(new URL("/receipts", request.url));
+  // }
 
   const newExpiresAt = Date.now() + SESSION_DURATION;
   const refreshed = await signSession({ userId: session.userId, role: session.role, expiresAt: newExpiresAt });

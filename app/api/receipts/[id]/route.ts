@@ -17,7 +17,8 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/receipts/[i
 }
 
 export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/receipts/[id]">) {
-  if (!await isAdmin()) return Response.json({ error: "권한이 없습니다." }, { status: 403 });
+  // [시연] 권한 제한 해제 — 원복 시 아래 주석 해제
+  // if (!await isAdmin()) return Response.json({ error: "권한이 없습니다." }, { status: 403 });
 
   const { id } = await ctx.params;
   const body = await req.json();
@@ -41,7 +42,8 @@ export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/receipts/[
 }
 
 export async function DELETE(_req: NextRequest, ctx: RouteContext<"/api/receipts/[id]">) {
-  if (!await isAdmin()) return Response.json({ error: "권한이 없습니다." }, { status: 403 });
+  // [시연] 권한 제한 해제 — 원복 시 아래 주석 해제
+  // if (!await isAdmin()) return Response.json({ error: "권한이 없습니다." }, { status: 403 });
 
   const { id } = await ctx.params;
 
