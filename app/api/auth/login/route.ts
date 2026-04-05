@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (selectError) {
+    console.error("[login] SUPABASE_URL:", process.env.SUPABASE_URL);
     console.error("[login] select error:", selectError);
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
   }
