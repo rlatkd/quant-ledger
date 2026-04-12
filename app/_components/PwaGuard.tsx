@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
+type Browser = "safari" | "chrome" | "samsung" | "edge" | "firefox" | "other";
+
 function isPwa(): boolean {
   if (typeof window === "undefined") return true;
   if ((navigator as Navigator & { standalone?: boolean }).standalone === true) return true;
@@ -10,164 +12,130 @@ function isPwa(): boolean {
   return false;
 }
 
-function detectOS(): "ios" | "android" | "other" {
+function detectBrowser(): Browser {
   if (typeof navigator === "undefined") return "other";
   const ua = navigator.userAgent;
-  if (/iPad|iPhone|iPod/.test(ua)) return "ios";
-  if (/Android/.test(ua)) return "android";
+  if (/SamsungBrowser/i.test(ua)) return "samsung";
+  if (/Edg\//i.test(ua)) return "edge";
+  if (/Firefox|FxiOS/i.test(ua)) return "firefox";
+  if (/Chrome|CriOS/i.test(ua) && !/Edg\//i.test(ua)) return "chrome";
+  if (/Safari/i.test(ua) && !/Chrome|CriOS|Android/i.test(ua)) return "safari";
   return "other";
 }
 
-function IosGuide() {
+type Step = { title: string; desc: string };
+
+const GUIDES: Record<Browser, { subtitle: string; steps: Step[]; footnote?: string }> = {
+  safari: {
+    subtitle: "Safari에서 아래 순서대로 설치해주세요",
+    steps: [
+      { title: "하단 공유 버튼 탭", desc: "화면 하단 가운데 공유 아이콘을 누르세요" },
+      { title: "홈 화면에 추가 선택", desc: "메뉴를 스크롤해서 항목을 찾으세요" },
+      { title: "우측 상단 추가 탭", desc: "추가를 누르면 설치가 완료됩니다" },
+    ],
+    footnote: "설치 후 홈 화면의 퀀트 장부 아이콘을 탭하세요",
+  },
+  chrome: {
+    subtitle: "Chrome에서 아래 순서대로 설치해주세요",
+    steps: [
+      { title: "주소창 옆 메뉴 열기", desc: "오른쪽 ⋮ 버튼을 누르세요" },
+      { title: "앱 설치 또는 홈 화면에 추가", desc: "메뉴에서 해당 항목을 선택하세요" },
+      { title: "설치 완료 후 앱 실행", desc: "홈 화면의 퀀트 장부 아이콘을 탭하세요" },
+    ],
+  },
+  edge: {
+    subtitle: "Edge에서 아래 순서대로 설치해주세요",
+    steps: [
+      { title: "우측 상단 메뉴 열기", desc: "··· 버튼을 누르세요" },
+      { title: "앱 → 이 사이트를 앱으로 설치", desc: "메뉴에서 항목을 선택하세요" },
+      { title: "설치 후 앱 실행", desc: "설치된 앱에서 퀀트 장부를 여세요" },
+    ],
+  },
+  samsung: {
+    subtitle: "삼성 인터넷에서 아래 순서대로 설치해주세요",
+    steps: [
+      { title: "하단 메뉴 열기", desc: "≡ 버튼을 누르세요" },
+      { title: "현재 페이지 추가", desc: "홈 화면에 추가를 선택하세요" },
+      { title: "설치 완료 후 앱 실행", desc: "홈 화면의 퀀트 장부 아이콘을 탭하세요" },
+    ],
+  },
+  firefox: {
+    subtitle: "Firefox는 PWA 설치가 제한적입니다",
+    steps: [
+      { title: "Safari 또는 Chrome으로 다시 열기", desc: "권장 브라우저에서 접속해주세요" },
+      { title: "iPhone은 Safari", desc: "공유 → 홈 화면에 추가" },
+      { title: "Android·PC는 Chrome", desc: "메뉴 → 앱 설치" },
+    ],
+  },
+  other: {
+    subtitle: "권장 브라우저에서 다시 열어주세요",
+    steps: [
+      { title: "iPhone / iPad", desc: "Safari로 접속 후 공유 → 홈 화면에 추가" },
+      { title: "Android", desc: "Chrome으로 접속 후 메뉴 → 앱 설치" },
+      { title: "PC", desc: "Chrome 또는 Edge에서 주소창 우측 설치 아이콘 클릭" },
+    ],
+  },
+};
+
+function StepList({ steps }: { steps: Step[] }) {
   return (
-    <div className="w-full max-w-xs space-y-3">
-      {/* Step 1 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-start gap-3">
-        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-skku text-white text-xs font-bold flex items-center justify-center mt-0.5">1</span>
-        <div>
-          <p className="text-sm font-semibold text-gray-800 mb-0.5">Safari 하단 공유 버튼 탭</p>
-          <p className="text-xs text-gray-400">화면 하단 가운데 아이콘을 누르세요</p>
-          {/* Safari share icon */}
-          <div className="mt-2 flex items-center gap-1.5">
-            <div className="bg-gray-100 rounded-xl px-3 py-2 flex items-center gap-1.5">
-              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15M12 3v12.75m0-12.75-3 3m3-3 3 3" />
-              </svg>
-              <span className="text-xs text-blue-500 font-medium">공유</span>
-            </div>
+    <ol className="w-full max-w-xs space-y-2.5">
+      {steps.map((s, i) => (
+        <li
+          key={i}
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-start gap-3 text-left"
+        >
+          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-skku text-white text-xs font-bold flex items-center justify-center mt-0.5">
+            {i + 1}
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-800">{s.title}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{s.desc}</p>
           </div>
-        </div>
-      </div>
-
-      {/* Step 2 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-start gap-3">
-        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-skku text-white text-xs font-bold flex items-center justify-center mt-0.5">2</span>
-        <div>
-          <p className="text-sm font-semibold text-gray-800 mb-0.5">홈 화면에 추가 선택</p>
-          <p className="text-xs text-gray-400">스크롤해서 아래 항목을 찾으세요</p>
-          <div className="mt-2 bg-gray-100 rounded-xl px-3 py-2 flex items-center gap-2">
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            <span className="text-xs text-gray-700 font-medium">홈 화면에 추가</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Step 3 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-start gap-3">
-        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-skku text-white text-xs font-bold flex items-center justify-center mt-0.5">3</span>
-        <div>
-          <p className="text-sm font-semibold text-gray-800 mb-0.5">추가 탭</p>
-          <p className="text-xs text-gray-400">우측 상단 <strong>추가</strong>를 누르면 설치 완료</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AndroidGuide() {
-  return (
-    <div className="w-full max-w-xs space-y-3">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-start gap-3">
-        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-skku text-white text-xs font-bold flex items-center justify-center mt-0.5">1</span>
-        <div>
-          <p className="text-sm font-semibold text-gray-800 mb-0.5">Chrome 메뉴 열기</p>
-          <p className="text-xs text-gray-400">주소창 오른쪽 <strong>⋮</strong> 버튼을 누르세요</p>
-        </div>
-      </div>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-start gap-3">
-        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-skku text-white text-xs font-bold flex items-center justify-center mt-0.5">2</span>
-        <div>
-          <p className="text-sm font-semibold text-gray-800 mb-0.5">앱 설치 또는 홈 화면에 추가</p>
-          <p className="text-xs text-gray-400">메뉴에서 해당 항목을 선택하세요</p>
-        </div>
-      </div>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-start gap-3">
-        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-skku text-white text-xs font-bold flex items-center justify-center mt-0.5">3</span>
-        <div>
-          <p className="text-sm font-semibold text-gray-800 mb-0.5">설치 완료 후 앱 실행</p>
-          <p className="text-xs text-gray-400">홈 화면의 퀀트 장부 아이콘을 탭하세요</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OtherGuide() {
-  return (
-    <div className="w-full max-w-xs bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100 text-left text-sm">
-      <div className="flex items-start gap-3 px-4 py-3.5">
-        <Image src="/apple.svg" alt="Apple" width={20} height={20} className="mt-0.5 flex-shrink-0" unoptimized />
-        <div>
-          <p className="font-semibold text-gray-800">iPhone / iPad</p>
-          <p className="text-gray-400 text-xs mt-0.5">Safari → 공유 버튼 → 홈 화면에 추가</p>
-        </div>
-      </div>
-      <div className="flex items-start gap-3 px-4 py-3.5">
-        <Image src="/android.svg" alt="Android" width={20} height={20} className="mt-0.5 flex-shrink-0" unoptimized />
-        <div>
-          <p className="font-semibold text-gray-800">Android</p>
-          <p className="text-gray-400 text-xs mt-0.5">Chrome → 메뉴(⋮) → 앱 설치 또는 홈 화면에 추가</p>
-        </div>
-      </div>
-      <div className="flex items-start gap-3 px-4 py-3.5">
-        <span className="text-lg mt-0.5">💻</span>
-        <div>
-          <p className="font-semibold text-gray-800">PC</p>
-          <p className="text-gray-400 text-xs mt-0.5">Chrome 주소창 오른쪽 앱에서 열기 클릭</p>
-        </div>
-      </div>
-    </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 
 export default function PwaGuard() {
   const [blocked, setBlocked] = useState(false);
-  const [os, setOs] = useState<"ios" | "android" | "other">("other");
+  const [browser, setBrowser] = useState<Browser>("other");
 
   useEffect(() => {
-    // if (process.env.NODE_ENV === "development") return;
     if (!isPwa()) {
-      setOs(detectOS());
+      setBrowser(detectBrowser());
       setBlocked(true);
     }
   }, []);
 
   if (!blocked) return null;
 
-  const subtitle =
-    os === "ios"
-      ? "Safari에서 아래 순서대로 설치해주세요"
-      : os === "android"
-      ? "Chrome에서 아래 순서대로 설치해주세요"
-      : "설치된 앱에서만 사용할 수 있습니다";
+  const guide = GUIDES[browser];
 
   return (
-    <div className="fixed inset-0 z-[999] bg-gray-50 flex flex-col items-center justify-center px-6 text-center overflow-y-auto py-10">
-      <Image
-        src="/icon-192.png"
-        alt="성균관대학교"
-        width={140}
-        height={140}
-        className="mb-5 flex-shrink-0"
-        style={{ mixBlendMode: "multiply" }}
-        priority
-      />
+    <div className="fixed inset-0 z-[999] bg-gray-50 flex flex-col items-center overflow-y-auto px-6 py-10">
+      <div className="flex flex-col items-center text-center w-full max-w-xs">
+        <Image
+          src="/icon-192.png"
+          alt="Quant Ledger"
+          width={120}
+          height={120}
+          className="flex-shrink-0"
+          style={{ mixBlendMode: "multiply" }}
+          priority
+        />
+        <p className="text-base text-gray-400 font-medium mt-3">Quant Ledger</p>
 
-      <p className="text-xl text-gray-400 font-medium mb-10">Quant Ledger</p>
-      <h1 className="text-xl font-bold text-gray-900 mb-1.5">앱으로 실행해주세요</h1>
-      <p className="text-sm text-gray-500 leading-relaxed mb-6">{subtitle}</p>
+        <h1 className="text-xl font-bold text-gray-900 mt-8">앱으로 실행해주세요</h1>
+        <p className="text-sm text-gray-500 mt-2 mb-6">{guide.subtitle}</p>
 
-      {os === "ios" && <IosGuide />}
-      {os === "android" && <AndroidGuide />}
-      {os === "other" && <OtherGuide />}
+        <StepList steps={guide.steps} />
 
-      {os === "ios" && (
-        <p className="mt-6 text-xs text-gray-400">
-          설치 후 홈 화면의 <strong>퀀트 장부</strong> 아이콘을 탭하세요
-        </p>
-      )}
+        {guide.footnote && (
+          <p className="mt-5 text-xs text-gray-400">{guide.footnote}</p>
+        )}
+      </div>
     </div>
   );
 }

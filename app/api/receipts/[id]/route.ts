@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabase } from "../../../_lib/supabase";
-import { isAdmin } from "../../../_lib/auth";
+import { requireAdmin } from "../../../_lib/auth";
 
 export async function GET(_req: NextRequest, ctx: RouteContext<"/api/receipts/[id]">) {
   const { id } = await ctx.params;
@@ -17,8 +17,8 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/receipts/[i
 }
 
 export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/receipts/[id]">) {
-  // [시연] 권한 제한 해제 — 원복 시 아래 주석 해제
-  // if (!await isAdmin()) return Response.json({ error: "권한이 없습니다." }, { status: 403 });
+  const forbidden = await requireAdmin();
+  if (forbidden) return forbidden;
 
   const { id } = await ctx.params;
   const body = await req.json();
@@ -42,12 +42,11 @@ export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/receipts/[
 }
 
 export async function DELETE(_req: NextRequest, ctx: RouteContext<"/api/receipts/[id]">) {
-  // [시연] 권한 제한 해제 — 원복 시 아래 주석 해제
-  // if (!await isAdmin()) return Response.json({ error: "권한이 없습니다." }, { status: 403 });
+  const forbidden = await requireAdmin();
+  if (forbidden) return forbidden;
 
   const { id } = await ctx.params;
 
-  // receipt_items는 ON DELETE CASCADE로 자동 삭제
   const { error } = await supabase.from("receipts").delete().eq("id", id);
   if (error) return Response.json({ error: error.message }, { status: 500 });
 

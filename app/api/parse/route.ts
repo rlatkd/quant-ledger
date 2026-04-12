@@ -1,7 +1,11 @@
 import type { NextRequest } from "next/server";
 import type { ParsedReceipt } from "../../_lib/types";
+import { requireAdmin } from "../../_lib/auth";
 
 export async function POST(req: NextRequest) {
+  const forbidden = await requireAdmin();
+  if (forbidden) return forbidden;
+
   const formData = await req.formData();
   const image = formData.get("image") as File | null;
 

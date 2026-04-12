@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import UploadSheet from "./UploadSheet";
+import { useRole } from "../_lib/useRole";
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const role = useRole();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const isHome = pathname === "/";
@@ -15,6 +17,8 @@ export default function BottomNav() {
   const isLogin = pathname === "/login";
 
   if (isUpload || isLogin) return null;
+
+  const canWrite = role === "admin";
 
   return (
     <>
@@ -41,8 +45,14 @@ export default function BottomNav() {
 
           {/* 추가 버튼 */}
           <button
-            onClick={() => setSheetOpen(true)}
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-skku active:scale-95 transition-transform cursor-pointer"
+            onClick={() => canWrite && setSheetOpen(true)}
+            disabled={!canWrite}
+            aria-label={canWrite ? "영수증 추가" : "조회 전용 계정은 등록할 수 없습니다"}
+            className={`flex items-center justify-center w-12 h-12 rounded-full transition-transform ${
+              canWrite
+                ? "bg-skku active:scale-95 cursor-pointer"
+                : "bg-gray-300 cursor-not-allowed"
+            }`}
           >
             <svg
               className="w-7 h-7 text-white"

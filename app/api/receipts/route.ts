@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabase } from "../../_lib/supabase";
-import { getSession } from "../../_lib/auth";
+import { getSession, requireAdmin } from "../../_lib/auth";
 
 export async function GET() {
   const { data, error } = await supabase
@@ -14,6 +14,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const forbidden = await requireAdmin();
+  if (forbidden) return forbidden;
+
   const session = await getSession();
   const body = await req.json();
   const { store_name, receipt_date, total_amount, raw_text, image_url, category_id, items } = body;

@@ -30,9 +30,9 @@ export default function RoleInfoModal() {
               <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
             </svg>
           </div>
-          <h2 className="text-base font-bold text-gray-900 mb-2">읽기 · 쓰기 전용 계정</h2>
+          <h2 className="text-base font-bold text-gray-900 mb-2">조회 전용 계정</h2>
           <p className="text-sm text-gray-400 leading-relaxed mb-6">
-            4월 12일부터<br />영수증 조회 및 등록은 가능하지만,<br />수정과 삭제는 관리자만 이용할 수 있습니다.
+            영수증 조회만 가능합니다.<br />등록 · 수정 · 삭제는<br />관리자만 이용할 수 있습니다.
           </p>
           <button
             onClick={handleConfirm}

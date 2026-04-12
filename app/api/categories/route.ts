@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { supabase } from "../../_lib/supabase";
+import { requireAdmin } from "../../_lib/auth";
 
 export async function GET() {
   const { data, error } = await supabase
@@ -12,6 +13,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const forbidden = await requireAdmin();
+  if (forbidden) return forbidden;
+
   const { name } = await req.json();
   if (!name?.trim()) return Response.json({ error: "이름을 입력해주세요." }, { status: 400 });
 

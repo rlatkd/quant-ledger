@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const { userId } = JSON.parse(atob(cookieValue)) as { userId: string };
     const { data, error } = await supabase
       .from("users")
-      .select("id, student_id, name, card_number")
+      .select("id, student_id, name, card_number, role")
       .eq("id", userId)
       .single();
 

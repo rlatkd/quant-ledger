@@ -14,3 +14,14 @@ export async function isAdmin(): Promise<boolean> {
   const session = await getSession();
   return session?.role === "admin";
 }
+
+export async function requireAdmin(): Promise<Response | null> {
+  const session = await getSession();
+  if (!session) {
+    return Response.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+  if (session.role !== "admin") {
+    return Response.json({ error: "권한이 없습니다." }, { status: 403 });
+  }
+  return null;
+}
