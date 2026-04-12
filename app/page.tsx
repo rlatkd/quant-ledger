@@ -49,7 +49,7 @@ const getDashboardData = unstable_cache(
     return { totalSpent, categoryStats, recentReceipts: (recentRes.data ?? []) as Receipt[] };
   },
   ["dashboard"],
-  { revalidate: false }
+  { tags: ["receipts", "categories"], revalidate: 60 },
 );
 
 function formatAmount(amount: number): string {

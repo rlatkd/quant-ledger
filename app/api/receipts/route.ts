@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { supabase } from "../../_lib/supabase";
 import { getSession, requireAdmin } from "../../_lib/auth";
 
@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  revalidatePath("/");
-  revalidatePath("/receipts");
+  revalidateTag("receipts", { expire: 0 });
   return Response.json({ id: data }, { status: 201 });
 }

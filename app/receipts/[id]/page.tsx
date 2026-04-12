@@ -20,7 +20,7 @@ function getReceipt(id: string) {
       return (data as Receipt) ?? null;
     },
     ["receipt", id],
-    { revalidate: false }
+    { tags: ["receipts", `receipt:${id}`], revalidate: 60 },
   )();
 }
 

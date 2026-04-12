@@ -9,26 +9,24 @@ async function getCategories(): Promise<Category[]> {
   return (data ?? []) as Category[];
 }
 
-async function getReceiptsUncached(categoryId?: string): Promise<Receipt[]> {
-  let query = supabase
-    .from("receipts")
-    .select("id, store_name, receipt_date, total_amount, created_at")
-    .order("created_at", { ascending: false });
-
-  if (categoryId) {
-    query = query.eq("category_id", categoryId);
-  }
-
-  const { data, error } = await query;
-  if (error) return [];
-  return data as Receipt[];
-}
-
 function getReceipts(categoryId?: string) {
   return unstable_cache(
-    () => getReceiptsUncached(categoryId),
+    async (): Promise<Receipt[]> => {
+      let query = supabase
+        .from("receipts")
+        .select("id, store_name, receipt_date, total_amount, created_at")
+        .order("created_at", { ascending: false });
+
+      if (categoryId) {
+        query = query.eq("category_id", categoryId);
+      }
+
+      const { data, error } = await query;
+      if (error) return [];
+      return data as Receipt[];
+    },
     ["receipts", categoryId ?? "all"],
-    { revalidate: false }
+    { tags: ["receipts"], revalidate: 60 },
   )();
 }
 

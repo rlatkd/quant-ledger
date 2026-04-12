@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { supabase } from "../../_lib/supabase";
 import { requireAdmin } from "../../_lib/auth";
 
@@ -26,5 +27,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  revalidateTag("categories", { expire: 0 });
   return Response.json(data, { status: 201 });
 }
