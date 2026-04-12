@@ -7,7 +7,9 @@ const SESSION_COOKIE = "ql_session";
 const SESSION_EXP_COOKIE = "ql_session_exp";
 const SESSION_DURATION = 30 * 60 * 1000;
 
-// Rate limiting: IP당 5회 실패 시 15분 차단
+// Rate limiting: IP당 5회 실패 시 30분 차단
+const MAX_ATTEMPTS = 5;
+const BAN_DURATION_MS = 30 * 60 * 1000;
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
 function getIp(req: NextRequest): string {
@@ -18,20 +20,21 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   const now = Date.now();
   const entry = attempts.get(ip);
   if (!entry || entry.resetAt < now) return { allowed: true };
-  if (entry.count >= 5) {
+  if (entry.count >= MAX_ATTEMPTS) {
     return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
   }
   return { allowed: true };
 }
 
-function recordFailure(ip: string): void {
+function recordFailure(ip: string): number {
   const now = Date.now();
   const entry = attempts.get(ip);
   if (!entry || entry.resetAt < now) {
-    attempts.set(ip, { count: 1, resetAt: now + 15 * 60 * 1000 });
-  } else {
-    entry.count++;
+    attempts.set(ip, { count: 1, resetAt: now + BAN_DURATION_MS });
+    return 1;
   }
+  entry.count++;
+  return entry.count;
 }
 
 function clearFailures(ip: string): void {
@@ -43,8 +46,14 @@ export async function POST(req: NextRequest) {
 
   const { allowed, retryAfter } = checkRateLimit(ip);
   if (!allowed) {
+    const minutes = Math.ceil((retryAfter ?? 0) / 60);
     return NextResponse.json(
-      { error: `시도 횟수 초과. ${retryAfter}초 후 다시 시도해주세요.` },
+      {
+        error: `시도 횟수 초과. ${minutes}분 후 다시 시도해주세요.`,
+        blocked: true,
+        retryAfter,
+        maxAttempts: MAX_ATTEMPTS,
+      },
       { status: 429 },
     );
   }
@@ -52,21 +61,27 @@ export async function POST(req: NextRequest) {
   const { studentId, name } = await req.json();
 
   if (!studentId || !/^\d{10}$/.test(studentId)) {
-    recordFailure(ip);
-    return NextResponse.json({ error: "학번 형식이 올바르지 않습니다." }, { status: 400 });
+    const count = recordFailure(ip);
+    return NextResponse.json(
+      { error: "학번 형식이 올바르지 않습니다.", failCount: count, maxAttempts: MAX_ATTEMPTS },
+      { status: 400 },
+    );
   }
 
   const trimmedName = (name ?? "").trim();
   if (!/^[가-힣a-zA-Z\s]{2,}$/.test(trimmedName)) {
-    recordFailure(ip);
-    return NextResponse.json({ error: "이름 형식이 올바르지 않습니다." }, { status: 400 });
+    const count = recordFailure(ip);
+    return NextResponse.json(
+      { error: "이름 형식이 올바르지 않습니다.", failCount: count, maxAttempts: MAX_ATTEMPTS },
+      { status: 400 },
+    );
   }
 
-  const { data: existing, error: selectError } = await supabase
+  // 학번 또는 이름 중 하나라도 기존에 있으면 두 값이 같은 행에서 일치해야 함
+  const { data: matches, error: selectError } = await supabase
     .from("users")
-    .select("id, role, name")
-    .eq("student_id", studentId)
-    .maybeSingle();
+    .select("id, role, name, student_id")
+    .or(`student_id.eq.${studentId},name.eq.${trimmedName}`);
 
   if (selectError) {
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
@@ -75,14 +90,23 @@ export async function POST(req: NextRequest) {
   let userId: string;
   let role: string;
 
-  if (existing) {
-    // 기존 유저 — 이름 일치 검증
-    if (existing.name !== trimmedName) {
-      recordFailure(ip);
-      return NextResponse.json({ error: "학번 또는 이름이 일치하지 않습니다." }, { status: 403 });
+  if (matches && matches.length > 0) {
+    const exact = matches.find(
+      (u) => u.student_id === studentId && u.name === trimmedName,
+    );
+    if (!exact) {
+      const count = recordFailure(ip);
+      return NextResponse.json(
+        {
+          error: "학번 또는 이름이 일치하지 않습니다.",
+          failCount: count,
+          maxAttempts: MAX_ATTEMPTS,
+        },
+        { status: 403 },
+      );
     }
-    userId = existing.id;
-    role = existing.role ?? "member";
+    userId = exact.id;
+    role = exact.role ?? "member";
   } else {
     // 신규 유저 — 자동 등록
     const { data: newUser, error: insertError } = await supabase
