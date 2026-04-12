@@ -5,6 +5,7 @@ import BottomNav from "./_components/BottomNav";
 import SessionGuard from "./_components/SessionGuard";
 import PwaGuard from "./_components/PwaGuard";
 import NavigationLoader from "./_components/NavigationLoader";
+import { isAdmin } from "./_lib/auth";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -34,18 +35,19 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const admin = await isAdmin();
   return (
     <html lang="ko" className={`${geist.variable} h-full overflow-hidden`}>
       <body className="h-full overflow-hidden flex flex-col bg-gray-50">
         <div className="flex-1 min-h-0 pb-20 max-w-md mx-auto w-full">
           {children}
         </div>
-        <BottomNav />
+        <BottomNav isAdmin={admin} />
         <SessionGuard />
         <PwaGuard />
         <NavigationLoader />

@@ -4,11 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import UploadSheet from "./UploadSheet";
-import { useRole } from "../_lib/useRole";
 
-export default function BottomNav() {
+export default function BottomNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
-  const role = useRole();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const isHome = pathname === "/";
@@ -18,7 +16,7 @@ export default function BottomNav() {
 
   if (isUpload || isLogin) return null;
 
-  const canWrite = role === "admin";
+  const canWrite = isAdmin;
 
   return (
     <>
